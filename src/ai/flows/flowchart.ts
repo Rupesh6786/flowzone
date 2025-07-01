@@ -33,31 +33,42 @@ const prompt = ai.definePrompt({
 Your response MUST be a JSON object that strictly adheres to the provided schema.
 
 **CRITICAL RULES FOR VALID MERMAID SYNTAX:**
-1.  **NO CODE SYNTAX IN LABELS:** Inside node text/labels, DO NOT use code syntax like \`nums[i]\`, \`i++\`, \`--j\`, or complex expressions. This will break the parser.
-2.  **USE DESCRIPTIVE TEXT:** Instead of code, describe the action in plain English.
-    -   GOOD: \`B[value at index i]\`
-    -   BAD: \`B[nums[i]]\`
-    -   GOOD: \`C[Increment i]\`
-    -   BAD: \`C[i++]\`
-3.  **NO SQUARE BRACKETS IN LABELS:** Do not use \`[\` or \`]\` inside the text of a node. Use parentheses \`(\` or \`)\` or just words.
-    -   GOOD: \`D[Return (found index, current index)]\`
-    -   BAD: \`D[Return [i, j]]\`
-4.  **ESCAPE QUOTES:** If you must use a double quote character (") inside a label, escape it as \`&quot;\`.
-5.  **MERMAID ONLY:** The 'flowchart' field must contain ONLY raw Mermaid.js syntax. DO NOT wrap it in markdown fences like \`\`\`mermaid ... \`\`\`.
+Your primary goal is to create a flowchart that will not cause a syntax error. Follow these rules without exception.
 
-**EXAMPLE OF A PERFECT RESPONSE:**
-Pseudocode: "START\\n  INPUT numbers_array\\n  SET sum to 0\\n  FOR each number in numbers_array\\n    ADD number to sum\\n  END FOR\\n  OUTPUT sum\\nEND"
-{
-  "flowchart": "graph TD\\n    A([Start]) --> B[/Get array of numbers/];\\n    B --> C[Initialize sum to 0];\\n    C --> D{For each number in the array};\\n    D -- Loop --> E[Add number to sum];\\n    E --> D;\\n    D -- End Loop --> F[/Output sum/];\\n    F --> Z([End]);"
-}
+1.  **NO CODE SYNTAX IN LABELS:**
+    -   DON'T use code like \`nums[i]\`, \`i++\`, \`--j\`, or complex expressions with \`==\`. This will break the parser.
+    -   DO use descriptive plain English instead.
+    -   Example:
+        -   BAD: \`B[sum = nums[i] + nums[j]]\`
+        -   GOOD: \`B[Calculate sum of values at index i and j]\`
+        -   BAD: \`C[i++]\`
+        -   GOOD: \`C[Increment i]\`
+        -   BAD: \`D{Is sum == target?}\`
+        -   GOOD: \`D{Is sum equal to target?}\`
 
+2.  **NO SQUARE BRACKETS IN LABELS:**
+    -   DON'T use square brackets \`[\` or \`]\` inside the text of a node.
+    -   DO use parentheses \`(\` or \`)\` or just words.
+    -   Example:
+        -   BAD: \`D[Return [i, j]]\`
+        -   GOOD: \`D[Return (i, j)]\`
+
+3.  **ESCAPE QUOTES:**
+    -   DON'T use unescaped double quotes (\`"\`) in labels.
+    -   DO escape them as \`&quot;\`.
+    -   Example:
+        -   BAD: \`D[Output "Not Found"]\`
+        -   GOOD: \`D[Output &quot;Not Found&quot;]\`
+
+4.  **MERMAID SYNTAX ONLY:**
+    -   The 'flowchart' field must contain ONLY raw Mermaid.js syntax. DO NOT wrap it in markdown fences like \`\`\`mermaid ... \`\`\`.
 
 Use the following shapes for a great user experience:
-- Start/End: \`A([Start])\`
+- Start/End: \`A([Start])\`, \`Z([End])\`
 - Process/Action: \`B[Initialize sum to 0]\`
 - Input/Output: \`C[/Get user input/]\`
 - Decision: \`D{Is value greater than 10?}\`
-- Loop: \`E{(For i from 0 to 10)}\`
+- Loop: \`E{(For each item in list)}\`
 
 Now, create a flowchart for the following pseudocode. Follow all rules strictly.
 
@@ -87,20 +98,19 @@ const generateFlowchartFlow = ai.defineFlow(
         if (!output) {
             const candidate = response.candidates[0];
             const finishReason = candidate?.finishReason;
-            let errorMessage = "The AI failed to generate a flowchart.";
+            let errorMessage = "The AI failed to generate a flowchart. Please try again.";
             if (finishReason === 'SAFETY') {
-                errorMessage = "The flowchart could not be generated due to safety filters. Try rephrasing the problem description.";
+                errorMessage = "The flowchart could not be generated due to safety filters. Your pseudocode might contain sensitive terms. Please try rephrasing it.";
             } else if (finishReason) {
-                 errorMessage = `The AI stopped for an unexpected reason: ${finishReason}. Please try again.`;
+                 errorMessage = `The AI stopped for an unexpected reason: ${finishReason}. Please try again or simplify your pseudocode.`;
             }
             throw new Error(errorMessage);
         }
         
-        // Check if the AI has violated our critical syntax rules.
-        const invalidSyntaxRegex = /\[[^\]]*[\[\]][^\]]*\]|i\+\+|--j/;
-        if (invalidSyntaxRegex.test(output.flowchart)) {
+        const invalidSyntaxRegex = /(\w+\[\w+\]|\+\+|--|==)/;
+        if (invalidSyntaxeRegex.test(output.flowchart)) {
             console.error("AI generated invalid Mermaid syntax:", output.flowchart);
-            throw new Error("The AI generated a flowchart with invalid syntax (like 'nums[i]' or 'i++'). Please try generating again, or manually correct the Mermaid code.");
+            throw new Error("The AI generated a flowchart with invalid syntax (like 'nums[i]' or '=='). Please try generating again, or manually correct the pseudocode.");
         }
 
         return output;

@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { Problem } from "@/lib/types";
@@ -6,12 +7,13 @@ import { CodeViewer } from "@/components/CodeViewer";
 import { FlowchartRenderer } from "@/components/FlowchartRenderer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Bookmark, Share2, Code2, Copy } from "lucide-react";
+import { Heart, Bookmark, Share2, Code2, Copy, Loader2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { CommentsSection } from "./CommentsSection";
+import { updateProblemStatsAction } from "@/app/actions";
 
 interface ProblemViewProps {
   problem: Problem;
@@ -20,6 +22,8 @@ interface ProblemViewProps {
 export function ProblemView({ problem }: ProblemViewProps) {
   const { toast } = useToast();
   const [shareUrl, setShareUrl] = useState("");
+  const [stats, setStats] = useState(problem.stats);
+  const [isUpdating, setIsUpdating] = useState<"likes" | "saves" | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -36,6 +40,33 @@ export function ProblemView({ problem }: ProblemViewProps) {
       });
     });
   };
+
+  const handleStatUpdate = async (stat: "likes" | "saves") => {
+    if (isUpdating) return;
+    setIsUpdating(stat);
+
+    setStats((prev) => ({ ...prev, [stat]: prev[stat] + 1 }));
+
+    const result = await updateProblemStatsAction(problem.id, stat);
+
+    if (!result.success) {
+      setStats((prev) => ({ ...prev, [stat]: prev[stat] - 1 }));
+      toast({
+        title: "Error",
+        description: result.error || "Could not update count. Please try again.",
+        variant: "destructive",
+      });
+    }
+    
+    // We can just leave the button disabled for this session after a successful click to prevent spam.
+    // Or reset the state to allow multiple clicks (for demo purposes, this is fine).
+    if (result.success) {
+        // To allow multiple clicks in a session, we would reset the state.
+        // For now, we'll keep it disabled to simulate a real-world scenario.
+    } else {
+       setIsUpdating(null);
+    }
+  };
   
   return (
     <div className="space-y-12">
@@ -50,8 +81,22 @@ export function ProblemView({ problem }: ProblemViewProps) {
           </div>
         </div>
         <div className="mt-6 flex items-center space-x-4">
-          <Button variant="outline"><Heart className="mr-2 h-4 w-4" /> Like ({problem.stats.likes})</Button>
-          <Button variant="outline"><Bookmark className="mr-2 h-4 w-4" /> Save ({problem.stats.saves})</Button>
+          <Button variant="outline" onClick={() => handleStatUpdate('likes')} disabled={isUpdating === 'likes'}>
+            {isUpdating === 'likes' ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Heart className="mr-2 h-4 w-4" />
+            )}
+            Like ({stats.likes})
+          </Button>
+          <Button variant="outline" onClick={() => handleStatUpdate('saves')} disabled={isUpdating === 'saves'}>
+             {isUpdating === 'saves' ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Bookmark className="mr-2 h-4 w-4" />
+            )}
+            Save ({stats.saves})
+          </Button>
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline"><Share2 className="mr-2 h-4 w-4" /> Share</Button>

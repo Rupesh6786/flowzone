@@ -1,10 +1,11 @@
+
 "use server";
 
 import { generateFlowchart, type FlowchartOutput } from '@/ai/flows/flowchart';
 import { generatePseudocode, type PseudocodeOutput } from '@/ai/flows/pseudocode';
 import { db } from '@/lib/firebase';
 import type { Comment, Problem } from '@/lib/types';
-import { arrayUnion, collection, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { arrayUnion, collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
 import fs from 'fs/promises';
 import path from 'path';
@@ -110,5 +111,33 @@ export async function addCommentAction(problemId: string, comment: Omit<Comment,
     } catch (error: any) {
         console.error('Error adding comment:', error);
         return { success: false, error: error.message };
+    }
+}
+
+export async function updateProblemStatsAction(problemId: string, stat: 'likes' | 'saves'): Promise<{ success: boolean; error?: string }> {
+    if (!problemId || (stat !== 'likes' && stat !== 'saves')) {
+        return { success: false, error: 'Invalid input provided.' };
+    }
+
+    try {
+        const problemRef = doc(db, 'problems', problemId);
+        const problemSnap = await getDoc(problemRef);
+
+        if (!problemSnap.exists()) {
+            return { success: false, error: 'Problem not found.' };
+        }
+
+        const currentCount = problemSnap.data().stats[stat] || 0;
+        const newCount = currentCount + 1;
+
+        await updateDoc(problemRef, {
+            [`stats.${stat}`]: newCount,
+        });
+
+        revalidatePath(`/problem/${problemId}`);
+        return { success: true };
+    } catch (error: any) {
+        console.error(`Error updating ${stat} count:`, error);
+        return { success: false, error: 'Could not update the count. Please try again.' };
     }
 }
