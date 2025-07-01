@@ -1,10 +1,29 @@
+"use client";
+
+import { useState, useMemo } from "react";
 import { ProblemCard } from "@/components/ProblemCard";
 import { Input } from "@/components/ui/input";
 import { getProblems } from "@/lib/data";
 import { Search } from "lucide-react";
 
 export default function Home() {
-  const problems = getProblems();
+  const problems = useMemo(() => getProblems(), []);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredProblems = useMemo(() => {
+    const lowercasedQuery = searchQuery.toLowerCase().trim();
+    if (!lowercasedQuery) {
+      return problems;
+    }
+    return problems.filter((problem) => {
+      const searchableText = [
+        problem.title,
+        problem.description,
+        ...problem.tags,
+      ].join(' ').toLowerCase();
+      return searchableText.includes(lowercasedQuery);
+    });
+  }, [searchQuery, problems]);
 
   return (
     <div className="flex flex-col items-center space-y-12">
@@ -21,16 +40,24 @@ export default function Home() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input 
-            placeholder="Search problems by title, tag, or keyword (e.g. 'average of 3 numbers')"
+            placeholder="Search problems by title, tag, or keyword (e.g. 'palindrome')"
             className="pl-10 h-12 text-base rounded-full"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
       </div>
 
       <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {problems.map((problem) => (
-          <ProblemCard key={problem.id} problem={problem} />
-        ))}
+        {filteredProblems.length > 0 ? (
+          filteredProblems.map((problem) => (
+            <ProblemCard key={problem.id} problem={problem} />
+          ))
+        ) : (
+          <div className="col-span-full text-center py-16">
+            <p className="text-muted-foreground">No problems found for "{searchQuery}"</p>
+          </div>
+        )}
       </div>
     </div>
   );
