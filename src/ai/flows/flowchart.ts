@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flowchart generation AI agent.
@@ -40,6 +41,7 @@ The flowchart must be valid Mermaid.js syntax and must start with "graph TD" for
 Important: If you need to include quote characters (") inside a node's text, you must escape them as HTML entities, for example, \`&quot;\`.
 Important: Avoid using characters that could be misinterpreted by the Mermaid parser inside node text, such as \`++\`, \`--\`, or complex expressions. Use descriptive words instead (e.g., "Increment i" instead of "i++").
 Important: Do not use square brackets \`[\` or \`]\` inside node text, as they can conflict with Mermaid's syntax. Use parentheses \`(\` and \`)\` or descriptive text instead.
+Important: When referring to array elements, use descriptive text like "value at index i" instead of code syntax like \`nums[i]\`, as the square brackets will break the flowchart.
 
 Use the following shapes to create a clear and understandable flowchart for a better user experience:
 - 🔵 Terminator (Start / End): Use a stadium shape for start and end nodes. e.g., \`A([Start])\`, \`Z([End])\`.
