@@ -110,8 +110,8 @@ graph TD
     B --> C[Clean S: remove non-alphanumeric & tolower];
     C --> D[Create reversed string R from S];
     D --> E{Is S == R?};
-    E -- Yes --> F[Output "Is Palindrome"];
-    E -- No --> G[Output "Not a Palindrome"];
+    E -- Yes --> F["Output &quot;Is Palindrome&quot;"];
+    E -- No --> G["Output &quot;Not a Palindrome&quot;"];
     F --> H[End];
     G --> H[End];
     `,
