@@ -59,6 +59,7 @@ export function FlowchartRenderer({ chart }: { chart: string }) {
   
   useEffect(() => {
     if (isMermaidReady && containerRef.current && chart) {
+      setError(null);
       try {
         containerRef.current.innerHTML = chart;
         containerRef.current.removeAttribute("data-processed");
@@ -95,5 +96,5 @@ export function FlowchartRenderer({ chart }: { chart: string }) {
     return <Skeleton className="w-full h-64" />;
   }
 
-  return <div ref={containerRef} key={chart} className="w-full flex justify-center flowchart-container" />;
+  return <div ref={containerRef} key={chart} className="mermaid w-full flex justify-center flowchart-container" />;
 }
