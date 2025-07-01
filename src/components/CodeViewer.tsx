@@ -1,7 +1,6 @@
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { getCodeContentAction } from "@/app/actions";
 import { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
 
@@ -21,9 +20,20 @@ function CodeDisplay({ path }: { path: string }) {
         const fetchCode = async () => {
             if (!path) return;
             setIsLoading(true);
-            const content = await getCodeContentAction(path);
-            setCode(content);
-            setIsLoading(false);
+            try {
+                const response = await fetch(path);
+                 if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const content = await response.text();
+                setCode(content);
+            } catch (error) {
+                 console.error("Failed to fetch code:", error);
+                 setCode(`// Error loading code from ${path}`);
+            }
+            finally {
+                setIsLoading(false);
+            }
         }
         fetchCode();
     }, [path]);

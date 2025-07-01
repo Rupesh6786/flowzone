@@ -1,11 +1,12 @@
 "use server";
 
 import { generateFlowchart, type FlowchartOutput } from '@/ai/flows/flowchart';
-import { db, storage } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import type { Comment, Problem } from '@/lib/types';
 import { arrayUnion, collection, doc, setDoc, updateDoc } from 'firebase/firestore';
-import { getBytes, ref, uploadBytes } from 'firebase/storage';
 import { revalidatePath } from 'next/cache';
+import fs from 'fs/promises';
+import path from 'path';
 
 export async function generateFlowchartAction(description: string): Promise<FlowchartOutput> {
   console.log('Generating flowchart for:', description);
@@ -17,7 +18,8 @@ export async function createProblemAction(formData: FormData): Promise<{ success
   try {
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
-    const tags = (formData.get('tags') as string).split(',').map(tag => tag.trim()).filter(Boolean);
+    const tagsValue = formData.get('tags') as string | null;
+    const tags = tagsValue ? tagsValue.split(',').map(tag => tag.trim()).filter(Boolean) : [];
     const flowchart = formData.get('flowchart') as string;
 
     const cFile = formData.get('c-code') as File | null;
@@ -35,9 +37,15 @@ export async function createProblemAction(formData: FormData): Promise<{ success
 
     const uploadFile = async (file: File | null) => {
       if (!file || file.size === 0) return null;
-      const storageRef = ref(storage, `code/${problemId}/${file.name}`);
-      await uploadBytes(storageRef, file);
-      return storageRef.fullPath;
+      
+      const uploadDir = path.join(process.cwd(), 'public', 'code', problemId);
+      await fs.mkdir(uploadDir, { recursive: true });
+      
+      const filePath = path.join(uploadDir, file.name);
+      const buffer = Buffer.from(await file.arrayBuffer());
+      await fs.writeFile(filePath, buffer);
+
+      return `/code/${problemId}/${file.name}`;
     };
 
     const cPath = await uploadFile(cFile);
@@ -71,18 +79,6 @@ export async function createProblemAction(formData: FormData): Promise<{ success
     console.error('Error creating problem:', error);
     return { success: false, error: error.message };
   }
-}
-
-export async function getCodeContentAction(path: string): Promise<string> {
-    try {
-        const storageRef = ref(storage, path);
-        const bytes = await getBytes(storageRef);
-        const code = new TextDecoder('utf-8').decode(bytes);
-        return code;
-    } catch (error) {
-        console.error("Failed to fetch code:", error);
-        return `// Error loading code from ${path}`;
-    }
 }
 
 export async function addCommentAction(problemId: string, comment: Omit<Comment, 'id' | 'timestamp'>): Promise<{ success: boolean; error?: string }> {
