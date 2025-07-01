@@ -6,7 +6,7 @@
     "description": "Check if a given string is a palindrome. A palindrome is a word, phrase, or sequence that reads the same backward as forward, e.g., madam or nurses run.",
     "tags": ["string", "two-pointer", "easy"],
     "code": {},
-    "flowchart": "graph TD\n    A([Start]) --> B[/Get input string/];\n    B --> C{Is string empty or null?};\n    C -- Yes --> D[Output \"Not a Palindrome\"];\n    C -- No --> E[Initialize left=0, right=length-1];\n    E --> F{left < right?};\n    F -- No --> G[Output \"Is Palindrome\"];\n    F -- Yes --> H{char at left == char at right?};\n    H -- No --> D;\n    H -- Yes --> I[Increment left, Decrement right];\n    I --> F;\n    D --> Z([End]);\n    G --> Z;",
+    "flowchart": "graph TD\n    A([Start]) --> B[/Get input string/];\n    B --> C{Is string empty or null?};\n    C -- Yes --> D[Output &quot;Not a Palindrome&quot;];\n    C -- No --> E[Initialize left=0, right=length-1];\n    E --> F{left < right?};\n    F -- No --> G[Output &quot;Is Palindrome&quot;];\n    F -- Yes --> H{char at left == char at right?};\n    H -- No --> D;\n    H -- Yes --> I[Increment left, Decrement right];\n    I --> F;\n    D --> Z([End]);\n    G --> Z;",
     "stats": {
       "likes": 120,
       "saves": 45
@@ -27,7 +27,7 @@
     "description": "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
     "tags": ["array", "hash-table", "easy"],
     "code": {},
-    "flowchart": "graph TD\n    A([Start]) --> B[/Get nums array and target/];\n    B --> C[Create a hash map to store complements];\n    C --> D{{For each number 'n' with index 'i' in nums}};\n    D --> E[Calculate complement = target - n];\n    E --> F{Is complement in hash map?};\n    F -- Yes --> G[Return [map.get(complement), i]];\n    F -- No --> H[Add n and its index i to hash map];\n    H --> D;\n    D -- Loop End --> I[Output \"No solution found\"];\n    G --> Z([End]);\n    I --> Z;",
+    "flowchart": "graph TD\n    A([Start]) --> B[/Get nums array and target/];\n    B --> C[Create a hash map to store complements];\n    C --> D{{For each number 'n' with index 'i' in nums}};\n    D --> E[Calculate complement = target - n];\n    E --> F{Is complement in hash map?};\n    F -- Yes --> G[Return [map.get(complement), i]];\n    F -- No --> H[Add n and its index i to hash map];\n    H --> D;\n    D -- Loop End --> I[Output &quot;No solution found&quot;];\n    G --> Z([End]);\n    I --> Z;",
     "stats": {
       "likes": 256,
       "saves": 88

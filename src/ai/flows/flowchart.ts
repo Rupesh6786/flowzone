@@ -32,6 +32,8 @@ const prompt = ai.definePrompt({
 Given the following problem description, create a Mermaid.js flowchart that visually represents the logic.
 The flowchart must be valid Mermaid.js syntax and must start with "graph TD" for a top-down graph.
 
+Important: If you need to include quote characters (") inside a node's text, you must escape them as HTML entities, for example, \`&quot;\`.
+
 Use the following shapes to create a clear and understandable flowchart for a better user experience:
 - 🔵 Terminator (Start / End): Use a stadium shape for start and end nodes. e.g., \`A([Start])\`, \`Z([End])\`.
 - 🔷 Process (Action / Instruction): Use a standard rectangle for actions like calculations or assignments. e.g., \`B[x = 5]\`.
