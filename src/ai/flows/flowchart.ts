@@ -32,8 +32,6 @@ const prompt = ai.definePrompt({
 Your response MUST be a JSON object that strictly adheres to the provided schema.
 The 'flowchart' field in the JSON object must contain ONLY the raw Mermaid.js syntax for the flowchart. Do NOT wrap it in markdown code fences (\`\`\`mermaid ... \`\`\`).
 
-Given the following problem description, create a Mermaid.js flowchart that visually represents the logic.
-
 Example of a valid response format:
 {"flowchart": "graph TD\\n    A([Start]) --> B[Step 1];\\n    B --> C{Decision?};\\n    C -- Yes --> D[End];"}
 
@@ -47,7 +45,7 @@ Use the following shapes to create a clear and understandable flowchart for a be
 - 🟨 Input/Output: Use a parallelogram for user input or output operations. e.g., \`C[/Read value/]\` or \`D[/Print value/]\`.
 - 🔶 Decision: Use a diamond for conditional checks like if/else. e.g., \`E{Is x > 0?}\`.
 - ⬛ Predefined Process (Function / Module): Use the subroutine shape for function calls. e.g., \`F[[Call my_function()]]\`.
-- 🟥 Loop Limit: Use a hexagon to represent the start and condition of a loop. e.g., \`G{{For i in 1 to 10}}\`.
+- 🟥 Loop Limit: Use a hexagon to represent the start and condition of a loop. e.g., \`G{(For i in 1 to 10)}\`.
 
 Problem Description:
 {{{description}}}
