@@ -10,12 +10,12 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const FlowchartInputSchema = z.object({
+const FlowchartInputSchema = z.object({
     description: z.string().describe('The problem description to be converted into a flowchart.'),
 });
 export type FlowchartInput = z.infer<typeof FlowchartInputSchema>;
 
-export const FlowchartOutputSchema = z.object({
+const FlowchartOutputSchema = z.object({
     flowchart: z.string().describe('The generated flowchart in Mermaid.js syntax. The flowchart should be a valid Mermaid graph definition.'),
 });
 export type FlowchartOutput = z.infer<typeof FlowchartOutputSchema>;
