@@ -33,22 +33,21 @@ export async function createProblemAction(formData: FormData): Promise<{ success
 
     const codePaths: { c?: string; cpp?: string; py?: string } = {};
 
-    const uploadFile = async (file: File) => {
-      if (file.size === 0) return null;
+    const uploadFile = async (file: File | null) => {
+      if (!file || file.size === 0) return null;
       const storageRef = ref(storage, `code/${problemId}/${file.name}`);
       await uploadBytes(storageRef, file);
       return storageRef.fullPath;
     };
 
-    const cPath = await uploadFile(cFile!);
+    const cPath = await uploadFile(cFile);
     if(cPath) codePaths.c = cPath;
 
-    const cppPath = await uploadFile(cppFile!);
+    const cppPath = await uploadFile(cppFile);
     if(cppPath) codePaths.cpp = cppPath;
 
-    const pyPath = await uploadFile(pyFile!);
+    const pyPath = await uploadFile(pyFile);
     if(pyPath) codePaths.py = pyPath;
-
 
     const newProblem: Problem = {
       id: problemId,
@@ -65,6 +64,7 @@ export async function createProblemAction(formData: FormData): Promise<{ success
 
     revalidatePath('/');
     revalidatePath('/create');
+    revalidatePath(`/problem/${problemId}`);
 
     return { success: true, problemId };
   } catch (error: any) {
