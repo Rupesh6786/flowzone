@@ -33,6 +33,10 @@ Your response MUST be a JSON object that strictly adheres to the provided schema
 The 'flowchart' field in the JSON object must contain ONLY the raw Mermaid.js syntax for the flowchart. Do NOT wrap it in markdown code fences (\`\`\`mermaid ... \`\`\`).
 
 Given the following problem description, create a Mermaid.js flowchart that visually represents the logic.
+
+Example of a valid response format:
+{"flowchart": "graph TD\\n    A([Start]) --> B[Step 1];\\n    B --> C{Decision?};\\n    C -- Yes --> D[End];"}
+
 The flowchart must be valid Mermaid.js syntax and must start with "graph TD" for a top-down graph.
 
 Important: If you need to include quote characters (") inside a node's text, you must escape them as HTML entities, for example, \`&quot;\`.
