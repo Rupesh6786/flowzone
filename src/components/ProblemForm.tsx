@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -35,7 +36,7 @@ export function ProblemForm() {
       setFlowchart(result.flowchart);
       toast({
         title: "Flowchart Generated! 🪄",
-        description: "The AI has successfully created a flowchart for you.",
+        description: "The AI has created a starting point for your flowchart.",
       });
     } catch (error: any) {
       toast({
@@ -128,8 +129,8 @@ export function ProblemForm() {
       
       <Card className="bg-card/60">
         <CardHeader>
-          <CardTitle>AI Flowchart Generator</CardTitle>
-          <CardDescription>Use the problem description to automatically generate a flowchart. You can edit the result later.</CardDescription>
+          <CardTitle>Flowchart Editor</CardTitle>
+          <CardDescription>Generate a flowchart with AI from your description, then edit the Mermaid.js code manually for a perfect result.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Button type="button" onClick={handleGenerateFlowchart} disabled={isGenerating || !description}>
@@ -140,8 +141,24 @@ export function ProblemForm() {
             )}
             Generate with AI
           </Button>
-          <div className="p-4 border rounded-lg min-h-[200px] bg-background">
-            <FlowchartRenderer chart={flowchart} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="flowchart-code">Mermaid Code</Label>
+              <Textarea
+                id="flowchart-code"
+                value={flowchart}
+                onChange={(e) => setFlowchart(e.target.value)}
+                placeholder={"graph TD\n  A([Start]) --> B{Is it... ?};\n  B -- Yes --> C[Do this];\n  B -- No --> D[Do that];"}
+                rows={12}
+                className="font-code text-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Live Preview</Label>
+              <div className="p-4 border rounded-lg min-h-[290px] bg-background overflow-auto flex items-center justify-center">
+                <FlowchartRenderer chart={flowchart} />
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
