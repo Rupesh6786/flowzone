@@ -31,7 +31,16 @@ export function ProblemForm() {
     setIsGenerating(true);
     try {
       const result = await generateFlowchartAction(description);
-      setFlowchart(result.flowchart);
+      
+      let flowchartText = result.flowchart;
+      // Sanitize AI output to remove markdown code blocks if they exist
+      const mermaidRegex = /```(?:mermaid)?\s*([\s\S]*?)\s*```/;
+      const match = flowchartText.match(mermaidRegex);
+      if (match && match[1]) {
+        flowchartText = match[1].trim();
+      }
+
+      setFlowchart(flowchartText);
       toast({
         title: "Flowchart Generated! 🪄",
         description: "The AI has successfully created a flowchart for you.",

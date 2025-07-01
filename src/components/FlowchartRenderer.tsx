@@ -1,84 +1,68 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
 
-const MERMAID_SCRIPT_ID = "mermaid-script-loader";
-
-// Updated MermaidAPI interface to reflect v10 API
-interface MermaidAPI {
-  initialize: (config: any) => void;
-  run: (options?: { nodes: Array<Element>; suppressErrors?: boolean }) => Promise<void>;
-  render: (id: string, source: string) => Promise<{ svg: string, bindFunctions?: (element: Element) => void }>;
-}
-
-declare global {
-  interface Window {
-    mermaid?: MermaidAPI;
-  }
-}
-
 export function FlowchartRenderer({ chart }: { chart: string }) {
-  const [isMermaidReady, setIsMermaidReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [svg, setSvg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const loadMermaid = () => {
-      if (window.mermaid) {
-        setIsMermaidReady(true);
-        return;
-      }
-
-      if (document.getElementById(MERMAID_SCRIPT_ID)) {
-        const checkReady = setInterval(() => {
-          if(window.mermaid) {
-            setIsMermaidReady(true);
-            clearInterval(checkReady);
-          }
-        }, 100);
-        return;
-      }
-      
-      const script = document.createElement("script");
-      script.id = MERMAID_SCRIPT_ID;
-      script.src = "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js";
-      script.onload = () => {
-        const isDarkMode = document.documentElement.classList.contains('dark');
-        window.mermaid?.initialize({ startOnLoad: false, theme: isDarkMode ? 'dark' : 'neutral' });
-        setIsMermaidReady(true);
-      };
-      script.onerror = () => {
-        setError("Failed to load Mermaid.js script.");
-      };
-      document.body.appendChild(script);
-    };
-    
-    loadMermaid();
+  const getTheme = useCallback(() => {
+    if (typeof window === "undefined") return 'neutral';
+    return document.documentElement.classList.contains('dark') ? 'dark' : 'neutral';
   }, []);
-  
-  useEffect(() => {
-    if (isMermaidReady && chart) {
+
+  const renderChart = useCallback(async () => {
+    if (!chart) {
+      setSvg(null);
       setError(null);
-      setSvg(null); // Clear previous SVG
-
-      const renderChart = async () => {
-        try {
-          // Use a unique ID for each render to avoid conflicts
-          const uniqueId = `mermaid-svg-${Date.now()}-${Math.random()}`;
-          const { svg: renderedSvg } = await window.mermaid!.render(uniqueId, chart);
-          setSvg(renderedSvg);
-        } catch (e) {
-          console.error("Mermaid rendering error:", e);
-          setError("Could not render the flowchart. Please check the syntax.");
-        }
-      };
-
-      renderChart();
+      setIsLoading(false);
+      return;
     }
-  }, [isMermaidReady, chart]);
+
+    setIsLoading(true);
+    try {
+      const { default: mermaid } = await import("mermaid");
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: getTheme(),
+      });
+      // The ID needs to be unique for each render.
+      const { svg: renderedSvg } = await mermaid.render(`mermaid-svg-${Date.now()}`, chart);
+      setSvg(renderedSvg);
+      setError(null);
+    } catch (e) {
+      console.error("Mermaid rendering error:", e);
+      setError("Could not render the flowchart. Please check the syntax.");
+      setSvg(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [chart, getTheme]);
+
+  useEffect(() => {
+    renderChart();
+  }, [renderChart]);
+
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.attributeName === 'class') {
+          // Re-render the chart on theme change
+          renderChart();
+        }
+      }
+    });
+
+    observer.observe(document.documentElement, { attributes: true });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [renderChart]);
 
   if (error) {
     return (
@@ -90,7 +74,7 @@ export function FlowchartRenderer({ chart }: { chart: string }) {
     );
   }
   
-  if (!chart) {
+  if (!chart && !isLoading) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
         <p>Flowchart will appear here once generated.</p>
@@ -98,12 +82,10 @@ export function FlowchartRenderer({ chart }: { chart: string }) {
     );
   }
 
-  // Show skeleton while rendering
-  if (!isMermaidReady || !svg) {
+  if (isLoading || !svg) {
     return <Skeleton className="w-full h-64" />;
   }
 
-  // Render the generated SVG
   return (
     <div
       className="w-full flex justify-center flowchart-container"
