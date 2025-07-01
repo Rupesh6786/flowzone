@@ -31,25 +31,35 @@ const prompt = ai.definePrompt({
     output: {schema: FlowchartOutputSchema},
     prompt: `You are an expert at creating Mermaid.js flowcharts from problem descriptions.
 Your response MUST be a JSON object that strictly adheres to the provided schema.
-The 'flowchart' field in the JSON object must contain ONLY the raw Mermaid.js syntax for the flowchart. Do NOT wrap it in markdown code fences (\`\`\`mermaid ... \`\`\`).
 
-Example of a valid response format:
-{"flowchart": "graph TD\\n    A([Start]) --> B[Step 1];\\n    B --> C{Decision?};\\n    C -- Yes --> D[End];"}
+**CRITICAL RULES FOR VALID SYNTAX:**
+1.  **NO CODE SYNTAX IN LABELS:** Inside node text/labels, DO NOT use code syntax like \`nums[i]\`, \`i++\`, \`--j\`, or complex expressions. This will break the parser.
+2.  **USE DESCRIPTIVE TEXT:** Instead of code, describe the action in plain English.
+    -   GOOD: \`B[value at index i]\`
+    -   BAD: \`B[nums[i]]\`
+    -   GOOD: \`C[Increment i]\`
+    -   BAD: \`C[i++]\`
+3.  **NO SQUARE BRACKETS IN LABELS:** Do not use \`[\` or \`]\` inside the text of a node. Use parentheses \`(\` or \`)\` or just words.
+    -   GOOD: \`D[Return (found index, current index)]\`
+    -   BAD: \`D[Return [i, j]]\`
+4.  **ESCAPE QUOTES:** If you must use a double quote character (") inside a label, escape it as \`&quot;\`.
+5.  **MERMAID ONLY:** The 'flowchart' field must contain ONLY raw Mermaid.js syntax. DO NOT wrap it in markdown fences like \`\`\`mermaid ... \`\`\`.
 
-The flowchart must be valid Mermaid.js syntax and must start with "graph TD" for a top-down graph.
+**EXAMPLE OF A PERFECT RESPONSE:**
+Description: "Given an array, find the sum of all elements."
+{
+  "flowchart": "graph TD\\n    A([Start]) --> B[/Get array of numbers/];\\n    B --> C[Initialize sum to 0];\\n    C --> D{For each number in the array};\\n    D -- Loop --> E[Add number to sum];\\n    E --> D;\\n    D -- End Loop --> F[/Output sum/];\\n    F --> Z([End]);"
+}
 
-Important: If you need to include quote characters (") inside a node's text, you must escape them as HTML entities, for example, \`&quot;\`.
-Important: Avoid using characters that could be misinterpreted by the Mermaid parser inside node text, such as \`++\`, \`--\`, or complex expressions. Use descriptive words instead (e.g., "Increment i" instead of "i++").
-Important: Do not use square brackets \`[\` or \`]\` inside node text, as they can conflict with Mermaid's syntax. Use parentheses \`(\` and \`)\` or descriptive text instead.
-Important: When referring to array elements, use descriptive text like "value at index i" instead of code syntax like \`nums[i]\`, as the square brackets will break the flowchart.
 
-Use the following shapes to create a clear and understandable flowchart for a better user experience:
-- 🔵 Terminator (Start / End): Use a stadium shape for start and end nodes. e.g., \`A([Start])\`, \`Z([End])\`.
-- 🔷 Process (Action / Instruction): Use a standard rectangle for actions like calculations or assignments. e.g., \`B[x = 5]\`.
-- 🟨 Input/Output: Use a parallelogram for user input or output operations. e.g., \`C[/Read value/]\` or \`D[/Print value/]\`.
-- 🔶 Decision: Use a diamond for conditional checks like if/else. e.g., \`E{Is x > 0?}\`.
-- ⬛ Predefined Process (Function / Module): Use the subroutine shape for function calls. e.g., \`F[[Call my_function()]]\`.
-- 🟥 Loop Limit: Use a hexagon to represent the start and condition of a loop. e.g., \`G{(For i in 1 to 10)}\`.
+Use the following shapes for a great user experience:
+- Start/End: \`A([Start])\`
+- Process/Action: \`B[Initialize sum to 0]\`
+- Input/Output: \`C[/Get user input/]\`
+- Decision: \`D{Is value greater than 10?}\`
+- Loop: \`E{(For i from 0 to 10)}\`
+
+Now, create a flowchart for the following problem description. Follow all rules strictly.
 
 Problem Description:
 {{{description}}}
