@@ -95,6 +95,14 @@ const generateFlowchartFlow = ai.defineFlow(
             }
             throw new Error(errorMessage);
         }
+        
+        // Check if the AI has violated our critical syntax rules.
+        const invalidSyntaxRegex = /\[[^\]]*[\[\]][^\]]*\]|i\+\+|--j/;
+        if (invalidSyntaxRegex.test(output.flowchart)) {
+            console.error("AI generated invalid Mermaid syntax:", output.flowchart);
+            throw new Error("The AI generated a flowchart with invalid syntax (like 'nums[i]' or 'i++'). Please try generating again, or manually correct the Mermaid code.");
+        }
+
         return output;
     }
 );
