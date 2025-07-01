@@ -29,6 +29,9 @@ const prompt = ai.definePrompt({
     input: {schema: FlowchartInputSchema},
     output: {schema: FlowchartOutputSchema},
     prompt: `You are an expert at creating Mermaid.js flowcharts from problem descriptions.
+Your response MUST be a JSON object that strictly adheres to the provided schema.
+The 'flowchart' field in the JSON object must contain ONLY the raw Mermaid.js syntax for the flowchart. Do NOT wrap it in markdown code fences (\`\`\`mermaid ... \`\`\`).
+
 Given the following problem description, create a Mermaid.js flowchart that visually represents the logic.
 The flowchart must be valid Mermaid.js syntax and must start with "graph TD" for a top-down graph.
 
@@ -45,6 +48,14 @@ Use the following shapes to create a clear and understandable flowchart for a be
 Problem Description:
 {{{description}}}
 `,
+    config: {
+        safetySettings: [
+          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+        ],
+    },
 });
 
 const generateFlowchartFlow = ai.defineFlow(
@@ -54,9 +65,19 @@ const generateFlowchartFlow = ai.defineFlow(
         outputSchema: FlowchartOutputSchema,
     },
     async (input) => {
-        const {output} = await prompt(input);
+        const response = await prompt(input);
+        const output = response.output;
+
         if (!output) {
-            throw new Error("The AI failed to generate a flowchart.");
+            const candidate = response.candidates[0];
+            const finishReason = candidate?.finishReason;
+            let errorMessage = "The AI failed to generate a flowchart.";
+            if (finishReason === 'SAFETY') {
+                errorMessage = "The flowchart could not be generated due to safety filters. Try rephrasing the problem description.";
+            } else if (finishReason) {
+                 errorMessage = `The AI stopped for an unexpected reason: ${finishReason}. Please try again.`;
+            }
+            throw new Error(errorMessage);
         }
         return output;
     }

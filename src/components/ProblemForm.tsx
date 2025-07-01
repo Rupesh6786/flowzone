@@ -45,10 +45,10 @@ export function ProblemForm() {
         title: "Flowchart Generated! 🪄",
         description: "The AI has successfully created a flowchart for you.",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "AI Error 🤖",
-        description: "Could not generate flowchart. Please try a different description.",
+        description: error.message || "Could not generate flowchart. Please try a different description.",
         variant: "destructive",
       });
     } finally {
