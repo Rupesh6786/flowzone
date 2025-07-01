@@ -108,7 +108,7 @@ const generateFlowchartFlow = ai.defineFlow(
         }
         
         const invalidSyntaxRegex = /(\w+\[\w+\]|\+\+|--|==)/;
-        if (invalidSyntaxeRegex.test(output.flowchart)) {
+        if (invalidSyntaxRegex.test(output.flowchart)) {
             console.error("AI generated invalid Mermaid syntax:", output.flowchart);
             throw new Error("The AI generated a flowchart with invalid syntax (like 'nums[i]' or '=='). Please try generating again, or manually correct the pseudocode.");
         }
