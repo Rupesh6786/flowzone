@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A flowchart generation AI agent.
+ * @fileOverview A flowchart generation AI agent from pseudocode.
  *
  * - generateFlowchart - A function that handles flowchart generation.
  * - FlowchartInput - The input type for the generateFlowchart function.
@@ -12,7 +12,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const FlowchartInputSchema = z.object({
-    description: z.string().describe('The problem description to be converted into a flowchart.'),
+    pseudocode: z.string().describe('The pseudocode to be converted into a flowchart.'),
 });
 export type FlowchartInput = z.infer<typeof FlowchartInputSchema>;
 
@@ -26,13 +26,13 @@ export async function generateFlowchart(input: FlowchartInput): Promise<Flowchar
 }
 
 const prompt = ai.definePrompt({
-    name: 'generateFlowchartPrompt',
+    name: 'generateFlowchartFromPseudocodePrompt',
     input: {schema: FlowchartInputSchema},
     output: {schema: FlowchartOutputSchema},
-    prompt: `You are an expert at creating Mermaid.js flowcharts from problem descriptions.
+    prompt: `You are an expert at creating Mermaid.js flowcharts from pseudocode.
 Your response MUST be a JSON object that strictly adheres to the provided schema.
 
-**CRITICAL RULES FOR VALID SYNTAX:**
+**CRITICAL RULES FOR VALID MERMAID SYNTAX:**
 1.  **NO CODE SYNTAX IN LABELS:** Inside node text/labels, DO NOT use code syntax like \`nums[i]\`, \`i++\`, \`--j\`, or complex expressions. This will break the parser.
 2.  **USE DESCRIPTIVE TEXT:** Instead of code, describe the action in plain English.
     -   GOOD: \`B[value at index i]\`
@@ -46,7 +46,7 @@ Your response MUST be a JSON object that strictly adheres to the provided schema
 5.  **MERMAID ONLY:** The 'flowchart' field must contain ONLY raw Mermaid.js syntax. DO NOT wrap it in markdown fences like \`\`\`mermaid ... \`\`\`.
 
 **EXAMPLE OF A PERFECT RESPONSE:**
-Description: "Given an array, find the sum of all elements."
+Pseudocode: "START\\n  INPUT numbers_array\\n  SET sum to 0\\n  FOR each number in numbers_array\\n    ADD number to sum\\n  END FOR\\n  OUTPUT sum\\nEND"
 {
   "flowchart": "graph TD\\n    A([Start]) --> B[/Get array of numbers/];\\n    B --> C[Initialize sum to 0];\\n    C --> D{For each number in the array};\\n    D -- Loop --> E[Add number to sum];\\n    E --> D;\\n    D -- End Loop --> F[/Output sum/];\\n    F --> Z([End]);"
 }
@@ -59,10 +59,10 @@ Use the following shapes for a great user experience:
 - Decision: \`D{Is value greater than 10?}\`
 - Loop: \`E{(For i from 0 to 10)}\`
 
-Now, create a flowchart for the following problem description. Follow all rules strictly.
+Now, create a flowchart for the following pseudocode. Follow all rules strictly.
 
-Problem Description:
-{{{description}}}
+Pseudocode:
+{{{pseudocode}}}
 `,
     config: {
         safetySettings: [
@@ -76,7 +76,7 @@ Problem Description:
 
 const generateFlowchartFlow = ai.defineFlow(
     {
-        name: 'generateFlowchartFlow',
+        name: 'generateFlowchartFromPseudocodeFlow',
         inputSchema: FlowchartInputSchema,
         outputSchema: FlowchartOutputSchema,
     },

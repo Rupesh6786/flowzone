@@ -1,6 +1,7 @@
 "use server";
 
 import { generateFlowchart, type FlowchartOutput } from '@/ai/flows/flowchart';
+import { generatePseudocode, type PseudocodeOutput } from '@/ai/flows/pseudocode';
 import { db } from '@/lib/firebase';
 import type { Comment, Problem } from '@/lib/types';
 import { arrayUnion, collection, doc, setDoc, updateDoc } from 'firebase/firestore';
@@ -8,9 +9,15 @@ import { revalidatePath } from 'next/cache';
 import fs from 'fs/promises';
 import path from 'path';
 
-export async function generateFlowchartAction(description: string): Promise<FlowchartOutput> {
-  console.log('Generating flowchart for:', description);
-  const result = await generateFlowchart({ description });
+export async function generatePseudocodeAction(description: string): Promise<PseudocodeOutput> {
+  console.log('Generating pseudocode for:', description);
+  const result = await generatePseudocode({ description });
+  return result;
+}
+
+export async function generateFlowchartFromPseudocodeAction(pseudocode: string): Promise<FlowchartOutput> {
+  console.log('Generating flowchart for:', pseudocode);
+  const result = await generateFlowchart({ pseudocode });
   return result;
 }
 
