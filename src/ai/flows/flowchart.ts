@@ -38,6 +38,7 @@ Example of a valid response format:
 The flowchart must be valid Mermaid.js syntax and must start with "graph TD" for a top-down graph.
 
 Important: If you need to include quote characters (") inside a node's text, you must escape them as HTML entities, for example, \`&quot;\`.
+Important: Avoid using characters that could be misinterpreted by the Mermaid parser inside node text, such as \`++\`, \`--\`, or complex expressions. Use descriptive words instead (e.g., "Increment i" instead of "i++").
 
 Use the following shapes to create a clear and understandable flowchart for a better user experience:
 - 🔵 Terminator (Start / End): Use a stadium shape for start and end nodes. e.g., \`A([Start])\`, \`Z([End])\`.

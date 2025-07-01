@@ -152,6 +152,9 @@ export function ProblemForm() {
                 rows={12}
                 className="font-code text-sm"
               />
+               <p className="text-xs text-muted-foreground">
+                Use valid Mermaid.js syntax. For node text, prefer words (e.g., "Increment i") over symbols (e.g., "i++").
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Live Preview</Label>
