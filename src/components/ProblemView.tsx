@@ -5,13 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { CodeViewer } from "@/components/CodeViewer";
 import { FlowchartRenderer } from "@/components/FlowchartRenderer";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Bookmark, MessageCircle, Share2, Code2, Copy } from "lucide-react";
+import { Heart, Bookmark, Share2, Code2, Copy } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
+import { CommentsSection } from "./CommentsSection";
 
 interface ProblemViewProps {
   problem: Problem;
@@ -111,28 +111,7 @@ export function ProblemView({ problem }: ProblemViewProps) {
         {/* Side Panel */}
         <div className="space-y-8">
           {/* Comments Section */}
-          <Card className="bg-card/60">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><MessageCircle /> Comments</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {problem.comments.length > 0 ? (
-                problem.comments.map(comment => (
-                  <div key={comment.id} className="flex items-start space-x-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>{comment.avatar}</AvatarFallback>
-                    </Avatar>
-                    <div className="text-sm">
-                      <p className="font-semibold">{comment.author}</p>
-                      <p className="text-muted-foreground">{comment.text}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">Be the first to comment! 🤔</p>
-              )}
-            </CardContent>
-          </Card>
+          <CommentsSection initialComments={problem.comments} />
         </div>
       </div>
     </div>
