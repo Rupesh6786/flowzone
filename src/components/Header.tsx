@@ -24,7 +24,7 @@ export function Header() {
             </Link>
             <ThemeToggle />
             <Avatar>
-              <AvatarImage src="https://placehold.co/40x40.png" alt="User" data-ai-hint="user avatar" />
+              <AvatarImage src="/code/G9DbjnwIgay7UeW9Sti3/profile.jpg" alt="User" data-ai-hint="user avatar" />
               <AvatarFallback>🧑‍💻</AvatarFallback>
             </Avatar>
           </nav>
