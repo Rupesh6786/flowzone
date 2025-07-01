@@ -17,8 +17,7 @@ export async function createProblemAction(formData: FormData): Promise<{ success
   try {
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
-    const tagsValue = formData.get('tags') as string | null;
-    const tags = tagsValue ? tagsValue.split(',').map(tag => tag.trim()).filter(Boolean) : [];
+    const tags = (formData.get('tags') as string).split(',').map(tag => tag.trim()).filter(Boolean);
     const flowchart = formData.get('flowchart') as string;
 
     const cFile = formData.get('c-code') as File | null;
