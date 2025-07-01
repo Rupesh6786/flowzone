@@ -1,0 +1,52 @@
+
+[
+  {
+    "id": "palindrome-check",
+    "title": "Palindrome Check",
+    "description": "Check if a given string is a palindrome. A palindrome is a word, phrase, or sequence that reads the same backward as forward, e.g., madam or nurses run.",
+    "tags": ["string", "two-pointer", "easy"],
+    "code": {},
+    "flowchart": "graph TD\n    A([Start]) --> B[/Get input string/];\n    B --> C{Is string empty or null?};\n    C -- Yes --> D[Output &quot;Not a Palindrome&quot;];\n    C -- No --> E[Initialize left=0, right=length-1];\n    E --> F{left < right?};\n    F -- No --> G[Output &quot;Is Palindrome&quot;];\n    F -- Yes --> H{char at left == char at right?};\n    H -- No --> D;\n    H -- Yes --> I[Increment left, Decrement right];\n    I --> F;\n    D --> Z([End]);\n    G --> Z;",
+    "stats": {
+      "likes": 120,
+      "saves": 45
+    },
+    "comments": [
+      {
+        "id": "1",
+        "author": "CodeWizard",
+        "avatar": "CW",
+        "text": "Nice problem! The two-pointer approach is very efficient.",
+        "timestamp": "2024-05-10T10:00:00Z"
+      }
+    ]
+  },
+  {
+    "id": "two-sum",
+    "title": "Two Sum",
+    "description": "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
+    "tags": ["array", "hash-table", "easy"],
+    "code": {},
+    "flowchart": "graph TD\n    A([Start]) --> B[/Get nums array and target/];\n    B --> C[Create a hash map to store complements];\n    C --> D{(For each number 'n' with index 'i' in nums)};\n    D --> E[Calculate complement = target - n];\n    E --> F{Is complement in hash map?};\n    F -- Yes --> G[Return (stored index, current index)];\n    F -- No --> H[Add n and its index i to hash map];\n    H --> D;\n    D -- Loop End --> I[Output &quot;No solution found&quot;];\n    G --> Z([End]);\n    I --> Z;",
+    "stats": {
+      "likes": 256,
+      "saves": 88
+    },
+    "comments": [
+       {
+        "id": "2",
+        "author": "AlgoQueen",
+        "avatar": "AQ",
+        "text": "A classic! The hash map solution is O(n) which is great.",
+        "timestamp": "2024-05-11T12:30:00Z"
+      },
+      {
+        "id": "3",
+        "author": "ScriptKid",
+        "avatar": "SK",
+        "text": "I tried a brute-force solution first, it was too slow.",
+        "timestamp": "2024-05-11T14:00:00Z"
+      }
+    ]
+  }
+]
