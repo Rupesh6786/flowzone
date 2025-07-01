@@ -1,14 +1,32 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ProblemCard } from "@/components/ProblemCard";
 import { Input } from "@/components/ui/input";
 import { getProblems } from "@/lib/data";
 import { Search } from "lucide-react";
+import type { Problem } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Home() {
-  const problems = useMemo(() => getProblems(), []);
+  const [problems, setProblems] = useState<Problem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const fetchProblems = async () => {
+      setIsLoading(true);
+      try {
+        const fetchedProblems = await getProblems();
+        setProblems(fetchedProblems);
+      } catch (error) {
+        console.error("Failed to fetch problems:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProblems();
+  }, []);
 
   const filteredProblems = useMemo(() => {
     const lowercasedQuery = searchQuery.toLowerCase().trim();
@@ -49,13 +67,17 @@ export default function Home() {
       </div>
 
       <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProblems.length > 0 ? (
+        {isLoading ? (
+          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-lg" />)
+        ) : filteredProblems.length > 0 ? (
           filteredProblems.map((problem) => (
             <ProblemCard key={problem.id} problem={problem} />
           ))
         ) : (
           <div className="col-span-full text-center py-16">
-            <p className="text-muted-foreground">No problems found for "{searchQuery}"</p>
+            <p className="text-muted-foreground">
+              {searchQuery ? `No problems found for "${searchQuery}"` : "No problems have been created yet. Be the first! 🚀"}
+            </p>
           </div>
         )}
       </div>

@@ -1,4 +1,9 @@
+"use client";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { getCodeContentAction } from "@/app/actions";
+import { useEffect, useState } from "react";
+import { Skeleton } from "./ui/skeleton";
 
 type CodeProps = {
   code: {
@@ -8,8 +13,41 @@ type CodeProps = {
   }
 }
 
+function CodeDisplay({ path }: { path: string }) {
+    const [code, setCode] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchCode = async () => {
+            if (!path) return;
+            setIsLoading(true);
+            const content = await getCodeContentAction(path);
+            setCode(content);
+            setIsLoading(false);
+        }
+        fetchCode();
+    }, [path]);
+
+    if (isLoading) {
+        return <Skeleton className="h-48 w-full" />
+    }
+
+    if (!code) {
+        return <p>Could not load code.</p>
+    }
+
+    return (
+        <pre className="bg-muted p-4 rounded-md overflow-x-auto text-sm font-code">
+            <code>{code.trim()}</code>
+        </pre>
+    );
+}
+
+
 export function CodeViewer({ code }: CodeProps) {
-  const availableLanguages = Object.keys(code).filter(lang => !!code[lang as keyof typeof code]);
+  const availableLanguages = Object.entries(code)
+    .filter(([, path]) => !!path)
+    .map(([lang]) => lang);
 
   if (availableLanguages.length === 0) {
     return (
@@ -29,23 +67,17 @@ export function CodeViewer({ code }: CodeProps) {
       
       {code.c && (
         <TabsContent value="c">
-          <pre className="bg-muted p-4 rounded-md overflow-x-auto text-sm font-code">
-            <code>{code.c.trim()}</code>
-          </pre>
+            <CodeDisplay path={code.c} />
         </TabsContent>
       )}
       {code.cpp && (
         <TabsContent value="cpp">
-          <pre className="bg-muted p-4 rounded-md overflow-x-auto text-sm font-code">
-            <code>{code.cpp.trim()}</code>
-          </pre>
+            <CodeDisplay path={code.cpp} />
         </TabsContent>
       )}
       {code.py && (
         <TabsContent value="py">
-          <pre className="bg-muted p-4 rounded-md overflow-x-auto text-sm font-code">
-            <code>{code.py.trim()}</code>
-          </pre>
+            <CodeDisplay path={code.py} />
         </TabsContent>
       )}
     </Tabs>

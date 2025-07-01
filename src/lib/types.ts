@@ -4,6 +4,7 @@ export interface Problem {
   description: string;
   tags: string[];
   code: {
+    // paths to code files in Firebase Storage
     c?: string;
     cpp?: string;
     py?: string;
@@ -12,11 +13,6 @@ export interface Problem {
   stats: {
     likes: number;
     saves: number;
-    solutions: {
-      c: number;
-      cpp: number;
-      py: number;
-    }
   };
   comments: Comment[];
 }
@@ -26,5 +22,5 @@ export interface Comment {
   author: string;
   avatar: string;
   text: string;
-  timestamp: string;
+  timestamp: string; // ISO 8601 string
 }

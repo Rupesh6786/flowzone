@@ -8,8 +8,8 @@ type ProblemPageProps = {
   };
 };
 
-export default function ProblemPage({ params }: ProblemPageProps) {
-  const problem = getProblemById(params.id);
+export default async function ProblemPage({ params }: ProblemPageProps) {
+  const problem = await getProblemById(params.id);
 
   if (!problem) {
     notFound();

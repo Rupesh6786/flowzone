@@ -39,7 +39,6 @@ export function ProblemView({ problem }: ProblemViewProps) {
   
   return (
     <div className="space-y-12">
-      {/* Header Section */}
       <section>
         <div className="space-y-4">
           <h1 className="text-4xl md:text-5xl font-bold font-headline tracking-tighter">{problem.title}</h1>
@@ -82,10 +81,8 @@ export function ProblemView({ problem }: ProblemViewProps) {
         </div>
       </section>
 
-      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          {/* Code Section */}
           <Card className="bg-card/60">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Code2 /> Code Solutions</CardTitle>
@@ -95,7 +92,6 @@ export function ProblemView({ problem }: ProblemViewProps) {
             </CardContent>
           </Card>
 
-          {/* Flowchart Section */}
           <Card className="bg-card/60">
             <CardHeader>
               <CardTitle>📊 Flowchart</CardTitle>
@@ -108,10 +104,8 @@ export function ProblemView({ problem }: ProblemViewProps) {
           </Card>
         </div>
 
-        {/* Side Panel */}
         <div className="space-y-8">
-          {/* Comments Section */}
-          <CommentsSection initialComments={problem.comments} />
+          <CommentsSection problemId={problem.id} initialComments={problem.comments} />
         </div>
       </div>
     </div>
