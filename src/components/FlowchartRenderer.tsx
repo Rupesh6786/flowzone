@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
 
 const MERMAID_SCRIPT_ID = "mermaid-script-loader";
 
+// Updated MermaidAPI interface to reflect v10 API
 interface MermaidAPI {
   initialize: (config: any) => void;
   run: (options?: { nodes: Array<Element>; suppressErrors?: boolean }) => Promise<void>;
+  render: (id: string, source: string) => Promise<{ svg: string, bindFunctions?: (element: Element) => void }>;
 }
 
 declare global {
@@ -19,9 +21,9 @@ declare global {
 }
 
 export function FlowchartRenderer({ chart }: { chart: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
   const [isMermaidReady, setIsMermaidReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [svg, setSvg] = useState<string | null>(null);
 
   useEffect(() => {
     const loadMermaid = () => {
@@ -58,19 +60,23 @@ export function FlowchartRenderer({ chart }: { chart: string }) {
   }, []);
   
   useEffect(() => {
-    if (isMermaidReady && containerRef.current && chart) {
+    if (isMermaidReady && chart) {
       setError(null);
-      try {
-        containerRef.current.innerHTML = chart;
-        containerRef.current.removeAttribute("data-processed");
-        window.mermaid?.run({ nodes: [containerRef.current] }).catch(err => {
-            console.error("Mermaid rendering error:", err);
-            setError("Could not render the flowchart. Please check the syntax.");
-        });
-      } catch (e: any) {
-        console.error("Error rendering flowchart:", e);
-        setError(e.message || "An unknown error occurred during rendering.");
-      }
+      setSvg(null); // Clear previous SVG
+
+      const renderChart = async () => {
+        try {
+          // Use a unique ID for each render to avoid conflicts
+          const uniqueId = `mermaid-svg-${Date.now()}-${Math.random()}`;
+          const { svg: renderedSvg } = await window.mermaid!.render(uniqueId, chart);
+          setSvg(renderedSvg);
+        } catch (e) {
+          console.error("Mermaid rendering error:", e);
+          setError("Could not render the flowchart. Please check the syntax.");
+        }
+      };
+
+      renderChart();
     }
   }, [isMermaidReady, chart]);
 
@@ -92,9 +98,16 @@ export function FlowchartRenderer({ chart }: { chart: string }) {
     );
   }
 
-  if (!isMermaidReady) {
+  // Show skeleton while rendering
+  if (!isMermaidReady || !svg) {
     return <Skeleton className="w-full h-64" />;
   }
 
-  return <div ref={containerRef} key={chart} className="mermaid w-full flex justify-center flowchart-container" />;
+  // Render the generated SVG
+  return (
+    <div
+      className="w-full flex justify-center flowchart-container"
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  );
 }
