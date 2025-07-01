@@ -27,7 +27,7 @@
     "description": "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
     "tags": ["array", "hash-table", "easy"],
     "code": {},
-    "flowchart": "graph TD\n    A([Start]) --> B[/Get nums array and target/];\n    B --> C[Create a hash map to store complements];\n    C --> D{{For each number 'n' with index 'i' in nums}};\n    D --> E[Calculate complement = target - n];\n    E --> F{Is complement in hash map?};\n    F -- Yes --> G[Return [map.get(complement), i]];\n    F -- No --> H[Add n and its index i to hash map];\n    H --> D;\n    D -- Loop End --> I[Output &quot;No solution found&quot;];\n    G --> Z([End]);\n    I --> Z;",
+    "flowchart": "graph TD\n    A([Start]) --> B[/Get nums array and target/];\n    B --> C[Create a hash map to store complements];\n    C --> D{(For each number 'n' with index 'i' in nums)};\n    D --> E[Calculate complement = target - n];\n    E --> F{Is complement in hash map?};\n    F -- Yes --> G[Return [map.get(complement), i]];\n    F -- No --> H[Add n and its index i to hash map];\n    H --> D;\n    D -- Loop End --> I[Output &quot;No solution found&quot;];\n    G --> Z([End]);\n    I --> Z;",
     "stats": {
       "likes": 256,
       "saves": 88
