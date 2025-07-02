@@ -41,12 +41,12 @@ export function Preloader() {
       )}
     >
       <div className="relative flex items-center justify-center">
+        <h1 className="mr-4 text-5xl font-bold font-headline tracking-tighter text-foreground animate-fade-in-text">
+          FlowZone
+        </h1>
         <div className="animate-rocket-fly">
           <Rocket className="h-16 w-16 -rotate-45 text-primary" />
         </div>
-        <h1 className="ml-4 text-5xl font-bold font-headline tracking-tighter text-foreground animate-fade-in-text">
-          FlowZone
-        </h1>
       </div>
     </div>
   );
