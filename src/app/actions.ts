@@ -5,21 +5,31 @@ import { db } from '@/lib/firebase';
 import type { Comment, Problem } from '@/lib/types';
 import { arrayUnion, collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
-import fs from 'fs/promises';
-import path from 'path';
+import { bucket } from '@/lib/firebase-admin';
 
-// Helper function to upload a file
+// Helper function to upload a file to Firebase Storage
 async function uploadFile(file: File | null, problemId: string): Promise<string | null> {
   if (!file || file.size === 0) return null;
   
-  const uploadDir = path.join(process.cwd(), 'public', 'code', problemId);
-  await fs.mkdir(uploadDir, { recursive: true });
-  
-  const filePath = path.join(uploadDir, file.name);
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await fs.writeFile(filePath, buffer);
+  // Define the path in the bucket
+  const filePath = `code/${problemId}/${file.name}`;
+  const fileRef = bucket.file(filePath);
 
-  return `/code/${problemId}/${file.name}`;
+  // Convert the file to a buffer
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  // Upload the file
+  await fileRef.save(buffer, {
+    metadata: {
+      contentType: file.type,
+    },
+  });
+
+  // Make the file public to get a public URL
+  await fileRef.makePublic();
+
+  // Return the public URL
+  return fileRef.publicUrl();
 };
 
 export async function createProblemAction(formData: FormData): Promise<{ success: boolean; error?: string; problemId?: string }> {
