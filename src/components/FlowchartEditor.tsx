@@ -116,28 +116,6 @@ export const FlowchartEditor: React.FC<FlowchartEditorProps> = ({ onChange }) =>
     }
   }, [nodes, edges, reactFlowInstance, onChange]);
 
-  const onNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
-    const newLabel = prompt("Enter new label for the node:", node.data.label);
-    if (newLabel !== null && newLabel.trim() !== '') {
-      setNodes((currentNodes) =>
-        currentNodes.map((n) => {
-          if (n.id === node.id) {
-            // Create a new node object to ensure React Flow detects the change.
-            return {
-              ...n,
-              data: {
-                ...n.data,
-                label: newLabel,
-              },
-            };
-          }
-          return n;
-        })
-      );
-    }
-  }, [setNodes]);
-
-
   const onConnect: OnConnect = useCallback(
     (params) => setEdges((eds) => addEdge({ ...params, animated: true, type: 'smoothstep' }, eds)),
     [setEdges],
@@ -193,7 +171,6 @@ export const FlowchartEditor: React.FC<FlowchartEditorProps> = ({ onChange }) =>
             onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            onNodeDoubleClick={onNodeDoubleClick}
             fitView
             proOptions={{ hideAttribution: true }}
             className="bg-background"

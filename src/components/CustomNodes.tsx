@@ -2,14 +2,48 @@
 'use client';
 
 import type { NodeProps } from 'reactflow';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, useReactFlow } from 'reactflow';
 import { cn } from '@/lib/utils';
+import { Pencil } from 'lucide-react';
 
 const baseNodeStyles = "bg-card border-2 border-foreground shadow-md text-foreground flex items-center justify-center text-center p-2";
 
-export function TerminatorNode({ data }: NodeProps<{ label: string }>) {
+const EditButton = ({ onClick }: { onClick: (e: React.MouseEvent) => void }) => (
+    <button 
+        onClick={onClick}
+        className="absolute top-1 right-1 p-1 rounded-full bg-background/80 text-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-accent"
+        aria-label="Edit node"
+    >
+        <Pencil className="w-3 h-3" />
+    </button>
+);
+
+const useNodeEditor = (id: string, currentLabel: string) => {
+    const { setNodes } = useReactFlow();
+
+    const handleEdit = (event: React.MouseEvent) => {
+        event.stopPropagation();
+        const newLabel = prompt("Enter new label for the node:", currentLabel);
+        if (newLabel !== null && newLabel.trim() !== '') {
+            setNodes((nodes) =>
+                nodes.map((node) => {
+                    if (node.id === id) {
+                        return { ...node, data: { ...node.data, label: newLabel } };
+                    }
+                    return node;
+                })
+            );
+        }
+    };
+
+    return handleEdit;
+};
+
+export function TerminatorNode({ id, data }: NodeProps<{ label: string }>) {
+  const handleEdit = useNodeEditor(id, data.label);
   return (
-    <div className={cn(baseNodeStyles, "rounded-full px-6 py-3 min-w-[120px]")}>
+    <div className={cn(baseNodeStyles, "rounded-full px-6 py-3 min-w-[120px] group relative")}>
+      <EditButton onClick={handleEdit} />
       <Handle type="target" position={Position.Top} isConnectable={true} />
       <span className="px-2 break-words">{data.label}</span>
       <Handle type="source" position={Position.Bottom} isConnectable={true} />
@@ -17,9 +51,11 @@ export function TerminatorNode({ data }: NodeProps<{ label: string }>) {
   );
 }
 
-export function ProcessNode({ data }: NodeProps<{ label: string }>) {
+export function ProcessNode({ id, data }: NodeProps<{ label:string }>) {
+  const handleEdit = useNodeEditor(id, data.label);
   return (
-    <div className={cn(baseNodeStyles, "rounded-md px-4 py-2 min-w-[150px] min-h-[50px]")}>
+    <div className={cn(baseNodeStyles, "rounded-md px-4 py-2 min-w-[150px] min-h-[50px] group relative")}>
+      <EditButton onClick={handleEdit} />
       <Handle type="target" position={Position.Top} isConnectable={true} />
       <span className="px-2 break-words">{data.label}</span>
       <Handle type="source" position={Position.Bottom} isConnectable={true} />
@@ -29,12 +65,20 @@ export function ProcessNode({ data }: NodeProps<{ label: string }>) {
   );
 }
 
-export function DecisionNode({ data }: NodeProps<{ label: string }>) {
+export function DecisionNode({ id, data }: NodeProps<{ label: string }>) {
+  const handleEdit = useNodeEditor(id, data.label);
   return (
     <div 
-      className={cn(baseNodeStyles, "w-40 h-40")}
+      className={cn(baseNodeStyles, "w-40 h-40 group relative")}
       style={{ clipPath: 'polygon(50% 0, 100% 50%, 50% 100%, 0 50%)' }}
     >
+      <button 
+        onClick={handleEdit}
+        className="absolute top-3 right-[2.2rem] p-1 rounded-full bg-background/80 text-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-accent"
+        aria-label="Edit node"
+      >
+        <Pencil className="w-3 h-3" />
+      </button>
       <Handle type="target" position={Position.Top} id="top" isConnectable={true} />
       <div className="max-w-[80%] break-words">{data.label}</div>
       <Handle type="source" position={Position.Right} id="right" isConnectable={true} />
@@ -44,9 +88,17 @@ export function DecisionNode({ data }: NodeProps<{ label: string }>) {
   );
 }
 
-export function InputOutputNode({ data }: NodeProps<{ label: string }>) {
+export function InputOutputNode({ id, data }: NodeProps<{ label: string }>) {
+    const handleEdit = useNodeEditor(id, data.label);
     return (
-      <div className={cn("w-44 min-h-[50px] flex items-center justify-center p-2 -skew-x-[20deg]", baseNodeStyles)}>
+      <div className={cn("w-44 min-h-[50px] flex items-center justify-center p-2 -skew-x-[20deg] group relative", baseNodeStyles)}>
+        <button 
+          onClick={handleEdit}
+          className="absolute top-1 right-1 p-1 rounded-full bg-background/80 text-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10 hover:bg-accent skew-x-[20deg]"
+          aria-label="Edit node"
+        >
+          <Pencil className="w-3 h-3" />
+        </button>
         <Handle type="target" position={Position.Top} isConnectable={true} />
         <span className="skew-x-[20deg] break-words">{data.label}</span>
         <Handle type="source" position={Position.Bottom} isConnectable={true} />
@@ -56,9 +108,11 @@ export function InputOutputNode({ data }: NodeProps<{ label: string }>) {
     );
 }
 
-export function PredefinedProcessNode({ data }: NodeProps<{ label: string }>) {
+export function PredefinedProcessNode({ id, data }: NodeProps<{ label: string }>) {
+    const handleEdit = useNodeEditor(id, data.label);
     return (
-        <div className={cn(baseNodeStyles, "p-1 min-w-[150px] min-h-[50px]")}>
+        <div className={cn(baseNodeStyles, "p-1 min-w-[150px] min-h-[50px] group relative")}>
+            <EditButton onClick={handleEdit} />
             <Handle type="target" position={Position.Top} isConnectable={true} />
             <div className="border-2 border-foreground w-full h-full flex items-center justify-center px-3 py-1.5">
                 <span className="break-words">{data.label}</span>
@@ -70,9 +124,11 @@ export function PredefinedProcessNode({ data }: NodeProps<{ label: string }>) {
     );
 }
 
-export function ConnectorNode({ data }: NodeProps<{ label: string }>) {
+export function ConnectorNode({ id, data }: NodeProps<{ label: string }>) {
+    const handleEdit = useNodeEditor(id, data.label);
     return (
-        <div className={cn(baseNodeStyles, "rounded-full w-20 h-20")}>
+        <div className={cn(baseNodeStyles, "rounded-full w-20 h-20 group relative")}>
+            <EditButton onClick={handleEdit} />
             <Handle type="target" position={Position.Top} isConnectable={true} />
             <span className="break-words">{data.label}</span>
             <Handle type="source" position={Position.Bottom} isConnectable={true} />
@@ -82,9 +138,11 @@ export function ConnectorNode({ data }: NodeProps<{ label: string }>) {
     );
 }
 
-export function DataNode({ data }: NodeProps<{ label: string }>) {
+export function DataNode({ id, data }: NodeProps<{ label: string }>) {
+  const handleEdit = useNodeEditor(id, data.label);
   return (
-    <div className="relative w-40 h-24 flex items-center justify-center text-foreground">
+    <div className="relative w-40 h-24 flex items-center justify-center text-foreground group">
+      <EditButton onClick={handleEdit} />
       <div className="absolute inset-0 bg-card -z-10"></div>
       <svg viewBox="0 0 100 80" className="absolute w-full h-full" fill="transparent" stroke="currentColor" strokeWidth="3">
           <path d="M98,20 V60 C98,71.045695 2,71.045695 2,60 V20" />
