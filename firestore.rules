@@ -1,12 +1,12 @@
-rules_version = '2';
 
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Anyone can read and create problems.
-    // Only authenticated users (admins) can update or delete them.
     match /problems/{problemId} {
-      allow read: if true;
-      allow create: if true;
+      // Anyone can read and create problems
+      allow read, create: if true;
+      
+      // Only authenticated users (admins) can update or delete
       allow update, delete: if request.auth != null;
     }
   }
