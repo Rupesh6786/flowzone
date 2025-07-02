@@ -31,12 +31,20 @@ export function ProcessNode({ data }: NodeProps<{ label:string }>) {
 
 export function DecisionNode({ data }: NodeProps<{ label: string }>) {
   return (
-    <div 
-      className={cn(baseNodeStyles, "w-40 h-40")} 
-      style={{ clipPath: 'polygon(50% 0, 100% 50%, 50% 100%, 0 50%)' }}
-    >
+    <div className="relative w-40 h-40 flex items-center justify-center text-center text-foreground shadow-md">
+      <svg
+        viewBox="0 0 100 100"
+        className="absolute w-full h-full"
+      >
+        <polygon 
+          points="50,2 98,50 50,98 2,50"
+          fill="hsl(var(--card))"
+          stroke="hsl(var(--foreground))"
+          strokeWidth="1.5"
+        />
+      </svg>
       <Handle type="target" position={Position.Top} id="top" isConnectable={true} />
-      <div className="max-w-[80%] break-words">{data.label}</div>
+      <div className="relative z-10 max-w-[70%] break-words">{data.label}</div>
       <Handle type="source" position={Position.Right} id="right" isConnectable={true} />
       <Handle type="source" position={Position.Bottom} id="bottom" isConnectable={true} />
       <Handle type="target" position={Position.Left} id="left" isConnectable={true} />
