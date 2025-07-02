@@ -101,7 +101,11 @@ export function ProblemForm() {
       <Card className="bg-card/60">
         <CardHeader>
           <CardTitle>Flowchart Editor</CardTitle>
-          <CardDescription>Drag and drop components from the sidebar to build your flowchart. Connect nodes by dragging from one handle to another. Double-click a node to edit its text.</CardDescription>
+          <CardDescription>
+            Build your flowchart by dragging components from the sidebar. Connect nodes by dragging from one handle to another.
+            <br />
+            <strong>To edit a node's text, simply double-click on it.</strong>
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <FlowchartEditor onChange={setFlowchartData} />

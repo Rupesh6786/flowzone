@@ -15,12 +15,16 @@ import ReactFlow, {
   type ReactFlowInstance,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { TerminatorNode, ProcessNode, DecisionNode } from './CustomNodes';
+import { TerminatorNode, ProcessNode, DecisionNode, InputOutputNode, PredefinedProcessNode, ConnectorNode, DataNode } from './CustomNodes';
 
 const nodeTypes = {
   terminator: TerminatorNode,
   process: ProcessNode,
   decision: DecisionNode,
+  inputOutput: InputOutputNode,
+  predefinedProcess: PredefinedProcessNode,
+  connector: ConnectorNode,
+  data: DataNode,
 };
 
 const initialNodes: Node[] = [];
@@ -37,17 +41,17 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="border-r-2 p-4 text-sm w-64 bg-background/80 space-y-3">
+    <aside className="border-r-2 p-4 text-sm w-64 bg-background/80 space-y-3 overflow-y-auto">
       <div className="mb-2 font-semibold text-center">Drag to Add Nodes</div>
       <div
-        className="p-3 border-primary/50 border-2 border-dashed rounded-full cursor-grab text-center bg-card hover:bg-card/90 hover:border-primary transition-colors"
+        className="p-3 border-primary/50 border-2 border-dashed rounded-full cursor-grab text-center bg-card hover:bg-card/90 hover:border-primary transition-colors flex justify-center items-center"
         onDragStart={(event) => onDragStart(event, 'terminator', 'Start/End')}
         draggable
       >
         Terminator
       </div>
       <div
-        className="p-3 border-primary/50 border-2 border-dashed rounded-md cursor-grab text-center bg-card hover:bg-card/90 hover:border-primary transition-colors"
+        className="p-3 border-primary/50 border-2 border-dashed rounded-md cursor-grab text-center bg-card hover:bg-card/90 hover:border-primary transition-colors flex justify-center items-center"
         onDragStart={(event) => onDragStart(event, 'process', 'Process')}
         draggable
       >
@@ -60,6 +64,34 @@ const Sidebar = () => {
         draggable
       >
         Decision
+      </div>
+      <div
+        className="p-3 border-primary/50 border-2 border-dashed -skew-x-[20deg] cursor-grab text-center bg-card hover:bg-card/90 hover:border-primary transition-colors flex justify-center items-center"
+        onDragStart={(event) => onDragStart(event, 'inputOutput', 'Input/Output')}
+        draggable
+      >
+        <span className="skew-x-[20deg]">Input/Output</span>
+      </div>
+      <div
+        className="p-1 border-primary/50 border-2 border-dashed rounded-md cursor-grab text-center bg-card hover:bg-card/90 hover:border-primary transition-colors flex justify-center items-center"
+        onDragStart={(event) => onDragStart(event, 'predefinedProcess', 'Sub-routine')}
+        draggable
+      >
+        <div className="border-2 border-transparent w-full h-full p-2">Sub-routine</div>
+      </div>
+       <div
+        className="p-3 border-primary/50 border-2 border-dashed rounded-full cursor-grab text-center bg-card hover:bg-card/90 hover:border-primary transition-colors flex justify-center items-center w-20 h-20 mx-auto"
+        onDragStart={(event) => onDragStart(event, 'connector', 'A')}
+        draggable
+      >
+        Connector
+      </div>
+      <div
+        className="p-3 border-primary/50 border-2 border-dashed rounded-md cursor-grab text-center bg-card hover:bg-card/90 hover:border-primary transition-colors flex justify-center items-center"
+        onDragStart={(event) => onDragStart(event, 'data', 'Data')}
+        draggable
+      >
+        Data
       </div>
     </aside>
   );
