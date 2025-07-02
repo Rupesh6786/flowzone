@@ -13,6 +13,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FlowchartEditor } from "./FlowchartEditor";
 import type { Problem } from "@/lib/types";
+import { useAuth } from "@/context/AuthContext";
 
 interface ProblemFormProps {
   problem?: Problem;
@@ -20,13 +21,21 @@ interface ProblemFormProps {
 
 export function ProblemForm({ problem }: ProblemFormProps) {
   const isEditMode = !!problem;
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (isEditMode && !authLoading && !user) {
+      router.push('/login');
+    }
+  }, [isEditMode, user, authLoading, router]);
+
   const [title, setTitle] = useState(problem?.title || "");
   const [description, setDescription] = useState(problem?.description || "");
   const [tags, setTags] = useState(problem?.tags?.join(', ') || "");
   const [flowchartData, setFlowchartData] = useState(problem?.flowchart || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const router = useRouter();
 
   useEffect(() => {
     if (problem) {
@@ -36,6 +45,17 @@ export function ProblemForm({ problem }: ProblemFormProps) {
       setFlowchartData(problem.flowchart);
     }
   }, [problem]);
+
+  if (isEditMode && (authLoading || !user)) {
+    return (
+      <div className="flex justify-center items-center h-[calc(100vh-200px)]">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+          <p className="mt-4 text-muted-foreground">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -121,7 +141,7 @@ export function ProblemForm({ problem }: ProblemFormProps) {
         <CardHeader>
           <CardTitle>Flowchart Editor</CardTitle>
           <CardDescription>
-            Build your flowchart by dragging nodes from the sidebar. To edit a node, <strong>click it to select it</strong> and then use the Properties panel that appears on the right.
+            Click a node to select it, then use the Properties panel on the right to edit its label.
           </CardDescription>
         </CardHeader>
         <CardContent>
