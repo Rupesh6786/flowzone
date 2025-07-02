@@ -1,8 +1,12 @@
+
 "use client";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "./ui/button";
+import { Copy, Check } from "lucide-react";
 
 type CodeProps = {
   code: {
@@ -15,6 +19,8 @@ type CodeProps = {
 function CodeDisplay({ path }: { path: string }) {
     const [code, setCode] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isCopied, setIsCopied] = useState(false);
+    const { toast } = useToast();
 
     useEffect(() => {
         const fetchCode = async () => {
@@ -37,6 +43,21 @@ function CodeDisplay({ path }: { path: string }) {
         }
         fetchCode();
     }, [path]);
+    
+    const handleCopy = () => {
+        if (!code) return;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            toast({ title: "Code Copied!" });
+            setIsCopied(true);
+            setTimeout(() => {
+                setIsCopied(false);
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            toast({ title: "Failed to copy", variant: "destructive" });
+        });
+    };
+
 
     if (isLoading) {
         return <Skeleton className="h-48 w-full" />
@@ -47,9 +68,20 @@ function CodeDisplay({ path }: { path: string }) {
     }
 
     return (
-        <pre className="bg-muted p-4 rounded-md overflow-x-auto text-sm font-code">
-            <code>{code.trim()}</code>
-        </pre>
+        <div className="relative group">
+            <pre className="bg-muted p-4 rounded-md overflow-x-auto text-sm font-code">
+                <code>{code.trim()}</code>
+            </pre>
+            <Button
+                size="icon"
+                variant="ghost"
+                className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={handleCopy}
+            >
+                {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                <span className="sr-only">Copy code</span>
+            </Button>
+        </div>
     );
 }
 

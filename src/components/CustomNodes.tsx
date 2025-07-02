@@ -100,3 +100,11 @@ export function DataNode({ data }: NodeProps<{ label: string }>) {
     </div>
   );
 }
+
+export function LabelNode({ data }: NodeProps<{ label: string }>) {
+  return (
+    <div className="text-foreground text-center break-words p-2 rounded-md bg-card/50 min-w-[100px]">
+        <span className="px-2">{data.label}</span>
+    </div>
+  );
+}

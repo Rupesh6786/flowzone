@@ -15,9 +15,11 @@ import ReactFlow, {
   type ReactFlowInstance,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { TerminatorNode, ProcessNode, DecisionNode, InputOutputNode, PredefinedProcessNode, ConnectorNode, DataNode } from './CustomNodes';
+import { TerminatorNode, ProcessNode, DecisionNode, InputOutputNode, PredefinedProcessNode, ConnectorNode, DataNode, LabelNode } from './CustomNodes';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Button } from './ui/button';
+import { Trash2 } from 'lucide-react';
 
 const nodeTypes = {
   terminator: TerminatorNode,
@@ -27,10 +29,8 @@ const nodeTypes = {
   predefinedProcess: PredefinedProcessNode,
   connector: ConnectorNode,
   data: DataNode,
+  label: LabelNode,
 };
-
-const initialNodes: Node[] = [];
-const initialEdges: Edge[] = [];
 
 let id = 0;
 const getId = () => `dndnode_${id++}`;
@@ -96,11 +96,18 @@ const NodePalette = () => {
       >
         Data
       </div>
+      <div
+        className="p-3 border-primary/50 border-2 border-dashed rounded-md cursor-grab text-center bg-card/50 hover:bg-card/90 hover:border-primary transition-colors flex justify-center items-center"
+        onDragStart={(event) => onDragStart(event, 'label', 'Your text here')}
+        draggable
+      >
+        Annotation Label
+      </div>
     </aside>
   );
 };
 
-const PropertiesPanel = ({ selectedNode, onLabelChange }: { selectedNode: Node | undefined, onLabelChange: (newLabel: string) => void }) => {
+const PropertiesPanel = ({ selectedNode, onLabelChange, onDeleteNode }: { selectedNode: Node | undefined, onLabelChange: (newLabel: string) => void, onDeleteNode: () => void }) => {
   if (!selectedNode) {
     return (
       <div className="border-l-2 p-4 text-sm w-64 bg-background/80 flex items-center justify-center">
@@ -126,6 +133,15 @@ const PropertiesPanel = ({ selectedNode, onLabelChange }: { selectedNode: Node |
           autoComplete="off"
         />
       </div>
+      <Button
+        variant="destructive"
+        size="sm"
+        className="w-full"
+        onClick={onDeleteNode}
+      >
+        <Trash2 className="mr-2" />
+        Delete Node
+      </Button>
     </aside>
   );
 };
@@ -139,26 +155,37 @@ interface FlowchartEditorProps {
 const DnDFlow = ({ onChange, initialValue }: FlowchartEditorProps) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
 
-  const [initialState] = useState(() => {
-    if (initialValue && initialValue.length > 2) {
-      try {
-        const flow = JSON.parse(initialValue);
-        if (flow && flow.nodes) {
-          return { nodes: flow.nodes, edges: flow.edges || [] };
-        }
-      } catch (e) {
-        console.error("Could not parse initial flowchart data", e);
-      }
-    }
-    return { nodes: initialNodes, edges: initialEdges };
-  });
-
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialState.nodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialState.edges);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
   const selectedNode = useMemo(() => nodes.find((node) => node.selected), [nodes]);
+  
+  // Load initial data only once
+  useEffect(() => {
+    if (initialValue && initialValue.length > 2 && reactFlowInstance) {
+      try {
+        const flow = JSON.parse(initialValue);
+        if (flow && flow.nodes) {
+          setNodes(flow.nodes || []);
+          setEdges(flow.edges || []);
+          // Let's fit the view after setting the nodes/edges
+          setTimeout(() => reactFlowInstance.fitView(), 50);
+        }
+      } catch (e) {
+        console.error("Could not parse initial flowchart data", e);
+        setNodes([]);
+        setEdges([]);
+      }
+    } else {
+        setNodes([]);
+        setEdges([]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialValue, reactFlowInstance]);
 
+
+  // Notify parent of changes
   useEffect(() => {
     if (reactFlowInstance) {
       const flow = reactFlowInstance.toObject();
@@ -213,6 +240,7 @@ const DnDFlow = ({ onChange, initialValue }: FlowchartEditorProps) => {
     setNodes((nds) =>
       nds.map((node) => {
         if (node.id === selectedNode.id) {
+          // It's important to create a new object here
           return {
             ...node,
             data: {
@@ -226,6 +254,12 @@ const DnDFlow = ({ onChange, initialValue }: FlowchartEditorProps) => {
     );
   };
   
+  const handleDeleteNode = useCallback(() => {
+    if (!selectedNode) return;
+    setNodes((nds) => nds.filter((n) => n.id !== selectedNode.id));
+    setEdges((eds) => eds.filter((e) => e.source !== selectedNode.id && e.target !== selectedNode.id));
+  }, [selectedNode, setNodes, setEdges]);
+
 
   return (
     <div className="flex h-[500px] md:h-[600px] border rounded-lg overflow-hidden bg-card">
@@ -249,7 +283,7 @@ const DnDFlow = ({ onChange, initialValue }: FlowchartEditorProps) => {
             <Background gap={16} />
           </ReactFlow>
         </div>
-        <PropertiesPanel selectedNode={selectedNode} onLabelChange={handleLabelChange} />
+        <PropertiesPanel selectedNode={selectedNode} onLabelChange={handleLabelChange} onDeleteNode={handleDeleteNode} />
     </div>
   );
 }
