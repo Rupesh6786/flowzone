@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import ReactFlow, {
   ReactFlowProvider,
   addEdge,
@@ -16,6 +16,8 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { TerminatorNode, ProcessNode, DecisionNode, InputOutputNode, PredefinedProcessNode, ConnectorNode, DataNode } from './CustomNodes';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 const nodeTypes = {
   terminator: TerminatorNode,
@@ -33,7 +35,7 @@ const initialEdges: Edge[] = [];
 let id = 0;
 const getId = () => `dndnode_${id++}`;
 
-const Sidebar = () => {
+const NodePalette = () => {
   const onDragStart = (event: React.DragEvent, nodeType: string, label: string) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.setData('application/reactflow-label', label);
@@ -57,12 +59,12 @@ const Sidebar = () => {
       >
         Process
       </div>
-      <div
-        className="h-28 flex items-center justify-center"
+       <div
+        className="h-28 flex items-center justify-center cursor-grab"
         onDragStart={(event) => onDragStart(event, 'decision', 'Decision')}
         draggable
       >
-        <div className="w-20 h-20 flex items-center justify-center transform rotate-45 bg-card hover:bg-card/90 text-center border-primary/50 border-2 border-dashed hover:border-primary transition-colors cursor-grab">
+        <div className="w-20 h-20 flex items-center justify-center transform rotate-45 bg-card hover:bg-card/90 text-center border-primary/50 border-2 border-dashed hover:border-primary transition-colors">
             <span className="transform -rotate-45">Decision</span>
         </div>
       </div>
@@ -98,6 +100,36 @@ const Sidebar = () => {
   );
 };
 
+const PropertiesPanel = ({ selectedNode, onLabelChange }: { selectedNode: Node | undefined, onLabelChange: (newLabel: string) => void }) => {
+  if (!selectedNode) {
+    return (
+      <div className="border-l-2 p-4 text-sm w-64 bg-background/80 flex items-center justify-center">
+        <div className="text-center text-muted-foreground">
+          <p>Click a node to edit its properties.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <aside className="border-l-2 p-4 text-sm w-64 bg-background/80 space-y-4">
+      <div className="space-y-2">
+        <h3 className="font-semibold text-lg text-center">Properties</h3>
+        <p className="text-xs text-muted-foreground text-center">Node ID: {selectedNode.id}</p>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="node-label">Label</Label>
+        <Input
+          id="node-label"
+          value={selectedNode.data.label}
+          onChange={(e) => onLabelChange(e.target.value)}
+          autoComplete="off"
+        />
+      </div>
+    </aside>
+  );
+};
+
 
 interface FlowchartEditorProps {
     onChange: (flowData: string) => void;
@@ -108,6 +140,8 @@ const DnDFlow = ({ onChange }: FlowchartEditorProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
+
+  const selectedNode = useMemo(() => nodes.find((node) => node.selected), [nodes]);
 
   useEffect(() => {
     if (reactFlowInstance) {
@@ -156,32 +190,30 @@ const DnDFlow = ({ onChange }: FlowchartEditorProps) => {
     },
     [reactFlowInstance, setNodes],
   );
+
+  const handleLabelChange = (newLabel: string) => {
+    if (!selectedNode) return;
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === selectedNode.id) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              label: newLabel,
+            },
+          };
+        }
+        return node;
+      })
+    );
+  };
   
-  const onNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
-      const newLabel = prompt("Enter new label for the node:", node.data.label);
-      if (newLabel !== null && newLabel.trim() !== '') {
-        setNodes((nds) =>
-          nds.map((n) => {
-            if (n.id === node.id) {
-              return {
-                ...n,
-                data: {
-                  ...n.data,
-                  label: newLabel,
-                },
-              };
-            }
-            return n;
-          })
-        );
-      }
-    }, [setNodes]
-  );
 
   return (
-    <div className="flex h-[500px] md:h-[600px] border rounded-lg overflow-hidden bg-card" ref={reactFlowWrapper}>
-        <Sidebar />
-        <div className="flex-grow h-full">
+    <div className="flex h-[500px] md:h-[600px] border rounded-lg overflow-hidden bg-card">
+        <NodePalette />
+        <div className="flex-grow h-full" ref={reactFlowWrapper}>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -191,7 +223,6 @@ const DnDFlow = ({ onChange }: FlowchartEditorProps) => {
             onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
-            onNodeDoubleClick={onNodeDoubleClick}
             fitView
             proOptions={{ hideAttribution: true }}
             className="bg-background"
@@ -201,6 +232,7 @@ const DnDFlow = ({ onChange }: FlowchartEditorProps) => {
             <Background gap={16} />
           </ReactFlow>
         </div>
+        <PropertiesPanel selectedNode={selectedNode} onLabelChange={handleLabelChange} />
     </div>
   );
 }
