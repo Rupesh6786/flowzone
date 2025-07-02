@@ -1,15 +1,16 @@
+
 export interface Problem {
   id: string;
   title: string;
   description: string;
   tags: string[];
   code: {
-    // paths to code files in Firebase Storage
+    // paths to code files
     c?: string;
     cpp?: string;
     py?: string;
   };
-  flowchart: string; // Mermaid syntax
+  flowchart: string; // Mermaid syntax OR ReactFlow JSON string
   stats: {
     likes: number;
     saves: number;

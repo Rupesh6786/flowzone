@@ -1,3 +1,1 @@
-// Flows will be imported for their side effects in this file.
-import './flows/flowchart';
-import './flows/pseudocode';
+// This file can be used to import new Genkit flows in the future.

@@ -7,86 +7,26 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
-import { FlowchartRenderer } from "./FlowchartRenderer";
-import { createProblemAction, generatePseudocodeAction, generateFlowchartFromPseudocodeAction } from "@/app/actions";
+import { createProblemAction } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Bot, BrainCircuit } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { FlowchartEditor } from "./FlowchartEditor";
 
 export function ProblemForm() {
   const [description, setDescription] = useState("");
-  const [pseudocode, setPseudocode] = useState("");
-  const [flowchart, setFlowchart] = useState("");
-
-  const [isGeneratingPseudocode, setIsGeneratingPseudocode] = useState(false);
-  const [isGeneratingFlowchart, setIsGeneratingFlowchart] = useState(false);
+  const [flowchartData, setFlowchartData] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
-
-  const handleGeneratePseudocode = async () => {
-    if (!description) {
-      toast({
-        title: "Uh oh! 😥",
-        description: "Please enter a problem description to generate pseudocode.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setIsGeneratingPseudocode(true);
-    try {
-      const result = await generatePseudocodeAction(description);
-      setPseudocode(result.pseudocode);
-      toast({
-        title: "Pseudocode Generated! 📝",
-        description: "The AI has created a starting point. Feel free to edit it before creating the flowchart.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "AI Error 🤖",
-        description: error.message || "Could not generate pseudocode. Please try a different description.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingPseudocode(false);
-    }
-  };
-
-  const handleGenerateFlowchart = async () => {
-    if (!pseudocode) {
-      toast({
-        title: "Uh oh! 😥",
-        description: "Please generate or write some pseudocode first.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setIsGeneratingFlowchart(true);
-    try {
-      const result = await generateFlowchartFromPseudocodeAction(pseudocode);
-      setFlowchart(result.flowchart);
-      toast({
-        title: "Flowchart Generated! 🪄",
-        description: "The AI has turned your pseudocode into a flowchart.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "AI Error 🤖",
-        description: error.message || "Could not generate flowchart. Please check your pseudocode and try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGeneratingFlowchart(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    formData.append('flowchart', flowchart);
-    formData.set('description', description); // Use set to ensure latest value from state is used
+    formData.append('flowchart', flowchartData);
+    formData.set('description', description);
 
     const result = await createProblemAction(formData);
 
@@ -160,48 +100,11 @@ export function ProblemForm() {
       
       <Card className="bg-card/60">
         <CardHeader>
-          <CardTitle>Flowchart Generator</CardTitle>
-          <CardDescription>Generate a flowchart in two steps: first create pseudocode from your description, then convert it to a visual flowchart.</CardDescription>
+          <CardTitle>Flowchart Editor</CardTitle>
+          <CardDescription>Drag and drop components from the sidebar to build your flowchart. Connect nodes by dragging from one handle to another. Double-click a node to edit its text.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4 p-4 border rounded-lg">
-            <div className="flex justify-between items-center">
-                <Label htmlFor="pseudocode-code" className="text-lg font-semibold">Step 1: Edit Pseudocode</Label>
-                <Button type="button" onClick={handleGeneratePseudocode} disabled={isGeneratingPseudocode || !description}>
-                  {isGeneratingPseudocode ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Bot className="mr-2 h-4 w-4" />
-                  )}
-                  Generate with AI
-                </Button>
-            </div>
-            <Textarea
-              id="pseudocode-code"
-              value={pseudocode}
-              onChange={(e) => setPseudocode(e.target.value)}
-              placeholder={"Generate pseudocode from your description above, or write your own here.\n\nExample:\nSTART\n  INPUT name\n  OUTPUT \"Hello, \" + name\nEND"}
-              rows={10}
-              className="font-code text-sm"
-            />
-          </div>
-
-          <div className="space-y-4 p-4 border rounded-lg">
-            <div className="flex justify-between items-center">
-                <Label className="text-lg font-semibold">Step 2: Generate Flowchart</Label>
-                 <Button type="button" onClick={handleGenerateFlowchart} disabled={isGeneratingFlowchart || !pseudocode}>
-                  {isGeneratingFlowchart ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <BrainCircuit className="mr-2 h-4 w-4" />
-                  )}
-                  Generate Flowchart
-                </Button>
-            </div>
-            <div className="p-4 border rounded-lg min-h-[290px] bg-background overflow-auto flex items-center justify-center">
-              <FlowchartRenderer chart={flowchart} />
-            </div>
-          </div>
+        <CardContent>
+          <FlowchartEditor onChange={setFlowchartData} />
         </CardContent>
       </Card>
 
