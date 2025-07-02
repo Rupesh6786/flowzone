@@ -13,8 +13,6 @@ import ReactFlow, {
   type Node,
   type Edge,
   type ReactFlowInstance,
-  NodeChange,
-  applyNodeChanges,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
