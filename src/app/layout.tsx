@@ -1,3 +1,4 @@
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -57,7 +58,7 @@ export default function RootLayout({
             </main>
             <footer className="py-6">
               <p className="text-center text-sm text-muted-foreground">
-                Created with ❤️ by Rupesh Thakur
+                Created with <span className="text-primary">❤️</span> by Rupesh Thakur
               </p>
             </footer>
           </div>
