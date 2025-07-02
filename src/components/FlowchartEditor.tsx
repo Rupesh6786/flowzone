@@ -116,24 +116,26 @@ export const FlowchartEditor: React.FC<FlowchartEditorProps> = ({ onChange }) =>
     }
   }, [nodes, edges, reactFlowInstance, onChange]);
 
-  const onNodeDoubleClick = useCallback((event: React.MouseEvent, node: Node) => {
-    const newLabel = prompt("Enter new label for node:", node.data.label);
-    if (newLabel !== null) {
-        const newNodes = nodes.map((n) => {
-            if (n.id === node.id) {
-                return {
-                    ...n,
-                    data: {
-                        ...n.data,
-                        label: newLabel,
-                    },
-                };
-            }
-            return n;
-        });
-        setNodes(newNodes);
+  const onNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    const newLabel = prompt("Enter new label for the node:", node.data.label);
+    if (newLabel !== null && newLabel.trim() !== '') {
+      setNodes((currentNodes) =>
+        currentNodes.map((n) => {
+          if (n.id === node.id) {
+            // Create a new node object to ensure React Flow detects the change.
+            return {
+              ...n,
+              data: {
+                ...n.data,
+                label: newLabel,
+              },
+            };
+          }
+          return n;
+        })
+      );
     }
-  }, [nodes, setNodes]);
+  }, [setNodes]);
 
 
   const onConnect: OnConnect = useCallback(
