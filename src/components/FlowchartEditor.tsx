@@ -161,15 +161,18 @@ const DnDFlow = ({ onChange, initialValue }: FlowchartEditorProps) => {
 
   const selectedNode = useMemo(() => nodes.find((node) => node.selected), [nodes]);
   
-  // Load initial data only once
+  // This effect loads the initial data from the parent.
+  // It's designed to run ONLY when the component's internal state is empty
+  // but an initialValue has been provided. This breaks the update loop that
+  // was causing the "Maximum update depth exceeded" error.
   useEffect(() => {
-    if (initialValue && initialValue.length > 2 && reactFlowInstance) {
+    if (reactFlowInstance && initialValue && nodes.length === 0 && edges.length === 0) {
       try {
         const flow = JSON.parse(initialValue);
-        if (flow && flow.nodes) {
+        // Ensure we have some nodes to load before proceeding
+        if (flow && flow.nodes && flow.nodes.length > 0) {
           setNodes(flow.nodes || []);
           setEdges(flow.edges || []);
-          // Let's fit the view after setting the nodes/edges
           setTimeout(() => reactFlowInstance.fitView(), 50);
         }
       } catch (e) {
@@ -177,15 +180,11 @@ const DnDFlow = ({ onChange, initialValue }: FlowchartEditorProps) => {
         setNodes([]);
         setEdges([]);
       }
-    } else {
-        setNodes([]);
-        setEdges([]);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialValue, reactFlowInstance]);
+  }, [initialValue, reactFlowInstance, nodes.length, edges.length, setNodes, setEdges]);
 
 
-  // Notify parent of changes
+  // This effect synchronizes the component state back to the parent's `onChange` handler.
   useEffect(() => {
     if (reactFlowInstance) {
       const flow = reactFlowInstance.toObject();
@@ -240,7 +239,7 @@ const DnDFlow = ({ onChange, initialValue }: FlowchartEditorProps) => {
     setNodes((nds) =>
       nds.map((node) => {
         if (node.id === selectedNode.id) {
-          // It's important to create a new object here
+          // It's important to create a new object here for React to detect the change
           return {
             ...node,
             data: {
