@@ -1,20 +1,14 @@
 import * as admin from 'firebase-admin';
 
-// Your project's storage bucket name
-const BUCKET_NAME = "ac-solution-t0zkx.appspot.com";
-
 try {
     if (!admin.apps.length) {
-        // Initialize the app with a service account is not needed in App Hosting.
-        // It automatically uses the runtime service account.
-        admin.initializeApp({
-            storageBucket: BUCKET_NAME,
-        });
+        // In a managed environment like App Hosting, the SDK is automatically
+        // initialized with the project's configuration and credentials.
+        // We don't need to provide a service account or storage bucket.
+        admin.initializeApp();
     }
 } catch (error: any) {
     console.error('Firebase admin initialization error', error.stack);
 }
 
 export const adminDb = admin.firestore();
-export const adminStorage = admin.storage();
-export const bucket = adminStorage.bucket();

@@ -2,34 +2,26 @@
 "use server";
 
 import { db } from '@/lib/firebase';
+import { adminDb } from '@/lib/firebase-admin';
 import type { Comment, Problem } from '@/lib/types';
 import { arrayUnion, collection, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { revalidatePath } from 'next/cache';
-import { bucket } from '@/lib/firebase-admin';
+import { promises as fs } from 'fs';
+import path from 'path';
 
-// Helper function to upload a file to Firebase Storage
+// Helper function to upload a file to the local public directory
 async function uploadFile(file: File | null, problemId: string): Promise<string | null> {
   if (!file || file.size === 0) return null;
   
-  // Define the path in the bucket
-  const filePath = `code/${problemId}/${file.name}`;
-  const fileRef = bucket.file(filePath);
+  const directoryPath = path.join(process.cwd(), 'public', 'code', problemId);
+  await fs.mkdir(directoryPath, { recursive: true });
 
-  // Convert the file to a buffer
+  const filePath = path.join(directoryPath, file.name);
   const buffer = Buffer.from(await file.arrayBuffer());
+  await fs.writeFile(filePath, buffer);
 
-  // Upload the file
-  await fileRef.save(buffer, {
-    metadata: {
-      contentType: file.type,
-    },
-  });
-
-  // Make the file public to get a public URL
-  await fileRef.makePublic();
-
-  // Return the public URL
-  return fileRef.publicUrl();
+  // Return the public URL path
+  return `/code/${problemId}/${file.name}`;
 };
 
 export async function createProblemAction(formData: FormData): Promise<{ success: boolean; error?: string; problemId?: string }> {
@@ -85,18 +77,43 @@ export async function createProblemAction(formData: FormData): Promise<{ success
   }
 }
 
-// This new action only handles file uploads for an existing problem.
-// The database update will be handled on the client.
 export async function uploadFilesAction(problemId: string, formData: FormData): Promise<{ success: boolean; error?: string; codePaths?: { c?: string; cpp?: string; py?: string; } }> {
   try {
     if (!problemId) {
       return { success: false, error: "Problem ID is required for uploads." };
     }
+    
+    // Fetch existing problem data to get old file paths for deletion
+    const problemRef = adminDb.collection('problems').doc(problemId);
+    const problemSnap = await problemRef.get();
+    if (!problemSnap.exists) {
+        return { success: false, error: "Problem not found during file update." };
+    }
+    const oldProblemData = problemSnap.data() as Problem;
 
     const cFile = formData.get('c-code') as File | null;
     const cppFile = formData.get('cpp-code') as File | null;
     const pyFile = formData.get('py-code') as File | null;
+    
+    // Helper to delete old files
+    const deleteOldFile = async (filePath: string | undefined) => {
+        if (!filePath) return;
+        try {
+            await fs.unlink(path.join(process.cwd(), 'public', filePath));
+        } catch (e: any) {
+            // It's okay if the file doesn't exist, so we only log other errors
+            if (e.code !== 'ENOENT') {
+                console.warn(`Could not delete old file: ${filePath}`, e);
+            }
+        }
+    };
 
+    // Delete old files if new ones are being uploaded
+    if (cFile?.size) await deleteOldFile(oldProblemData.code.c);
+    if (cppFile?.size) await deleteOldFile(oldProblemData.code.cpp);
+    if (pyFile?.size) await deleteOldFile(oldProblemData.code.py);
+
+    // Upload new files
     const newPaths: { c?: string; cpp?: string; py?: string } = {};
 
     const cPath = await uploadFile(cFile, problemId);
