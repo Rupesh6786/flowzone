@@ -20,11 +20,11 @@ export function TerminatorNode({ data }: NodeProps<{ label: string }>) {
 export function ProcessNode({ data }: NodeProps<{ label:string }>) {
   return (
     <div className={cn(baseNodeStyles, "rounded-md px-4 py-2 min-w-[150px] min-h-[50px]")}>
-      <Handle type="target" position={Position.Top} isConnectable={true} />
+      <Handle type="target" position={Position.Top} id="top-target" isConnectable={true} />
       <span className="px-2 break-words">{data.label}</span>
-      <Handle type="source" position={Position.Bottom} isConnectable={true} />
-      <Handle type="target" position={Position.Left} isConnectable={true} />
-      <Handle type="source" position={Position.Right} isConnectable={true} />
+      <Handle type="source" position={Position.Bottom} id="bottom-source" isConnectable={true} />
+      <Handle type="target" position={Position.Left} id="left-target" isConnectable={true} />
+      <Handle type="source" position={Position.Right} id="right-source" isConnectable={true} />
     </div>
   );
 }
@@ -47,11 +47,11 @@ export function DecisionNode({ data }: NodeProps<{ label: string }>) {
 export function InputOutputNode({ data }: NodeProps<{ label: string }>) {
     return (
       <div className={cn("w-44 min-h-[50px] flex items-center justify-center p-2 -skew-x-[20deg]", baseNodeStyles)}>
-        <Handle type="target" position={Position.Top} isConnectable={true} />
+        <Handle type="target" position={Position.Top} id="top-target" isConnectable={true} />
         <span className="skew-x-[20deg] break-words">{data.label}</span>
-        <Handle type="source" position={Position.Bottom} isConnectable={true} />
-        <Handle type="target" position={Position.Left} isConnectable={true} />
-        <Handle type="source" position={Position.Right} isConnectable={true} />
+        <Handle type="source" position={Position.Bottom} id="bottom-source" isConnectable={true} />
+        <Handle type="target" position={Position.Left} id="left-target" isConnectable={true} />
+        <Handle type="source" position={Position.Right} id="right-source" isConnectable={true} />
       </div>
     );
 }
@@ -59,13 +59,13 @@ export function InputOutputNode({ data }: NodeProps<{ label: string }>) {
 export function PredefinedProcessNode({ data }: NodeProps<{ label: string }>) {
     return (
       <div className={cn(baseNodeStyles, "p-1 min-w-[150px] min-h-[50px]")}>
-        <Handle type="target" position={Position.Top} isConnectable={true} />
+        <Handle type="target" position={Position.Top} id="top-target" isConnectable={true} />
         <div className="border-2 border-foreground w-full h-full flex items-center justify-center px-3 py-1.5">
             <span className="break-words">{data.label}</span>
         </div>
-        <Handle type="source" position={Position.Bottom} isConnectable={true} />
-        <Handle type="target" position={Position.Left} isConnectable={true} />
-        <Handle type="source" position={Position.Right} isConnectable={true} />
+        <Handle type="source" position={Position.Bottom} id="bottom-source" isConnectable={true} />
+        <Handle type="target" position={Position.Left} id="left-target" isConnectable={true} />
+        <Handle type="source" position={Position.Right} id="right-source" isConnectable={true} />
       </div>
     );
 }
@@ -73,11 +73,11 @@ export function PredefinedProcessNode({ data }: NodeProps<{ label: string }>) {
 export function ConnectorNode({ data }: NodeProps<{ label: string }>) {
     return (
       <div className={cn(baseNodeStyles, "rounded-full w-20 h-20")}>
-        <Handle type="target" position={Position.Top} isConnectable={true} />
+        <Handle type="target" position={Position.Top} id="top-target" isConnectable={true} />
         <span className="break-words">{data.label}</span>
-        <Handle type="source" position={Position.Bottom} isConnectable={true} />
-        <Handle type="target" position={Position.Left} isConnectable={true} />
-        <Handle type="source" position={Position.Right} isConnectable={true} />
+        <Handle type="source" position={Position.Bottom} id="bottom-source" isConnectable={true} />
+        <Handle type="target" position={Position.Left} id="left-target" isConnectable={true} />
+        <Handle type="source" position={Position.Right} id="right-source" isConnectable={true} />
       </div>
     );
 }
@@ -93,17 +93,17 @@ export function DataNode({ data }: NodeProps<{ label: string }>) {
       <div className="relative break-words max-w-[80%] text-center p-2">
           {data.label}
       </div>
-      <Handle type="target" position={Position.Top} isConnectable={true} />
-      <Handle type="source" position={Position.Bottom} isConnectable={true} />
-      <Handle type="target" position={Position.Left} isConnectable={true} />
-      <Handle type="source" position={Position.Right} isConnectable={true} />
+      <Handle type="target" position={Position.Top} id="top-target" isConnectable={true} />
+      <Handle type="source" position={Position.Bottom} id="bottom-source" isConnectable={true} />
+      <Handle type="target" position={Position.Left} id="left-target" isConnectable={true} />
+      <Handle type="source" position={Position.Right} id="right-source" isConnectable={true} />
     </div>
   );
 }
 
 export function LabelNode({ data }: NodeProps<{ label: string }>) {
   return (
-    <div className="text-foreground text-center break-words p-2 rounded-md bg-card/50 min-w-[100px]">
+    <div className="text-foreground text-center break-words p-2 rounded-md bg-transparent border-2 border-dashed border-foreground/50 min-w-[100px]">
         <span className="px-2">{data.label}</span>
     </div>
   );
