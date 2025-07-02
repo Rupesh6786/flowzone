@@ -7,13 +7,16 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
-import { createProblemAction, updateProblemAction } from "@/app/actions";
+import { createProblemAction, uploadFilesAction } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FlowchartEditor } from "./FlowchartEditor";
 import type { Problem } from "@/lib/types";
 import { useAuth } from "@/context/AuthContext";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { revalidatePath } from "next/cache";
 
 interface ProblemFormProps {
   problem?: Problem;
@@ -62,26 +65,66 @@ export function ProblemForm({ problem }: ProblemFormProps) {
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    formData.append('flowchart', flowchartData);
 
-    const result = isEditMode
-      ? await updateProblemAction(problem.id, formData)
-      : await createProblemAction(formData);
+    if (isEditMode && problem) {
+      // Handle update logic on the client to ensure auth context is available
+      try {
+        const problemRef = doc(db, 'problems', problem.id);
 
-    if (result.success && result.problemId) {
-      toast({
-        title: `Problem ${isEditMode ? 'Updated' : 'Submitted'}! 🎉`,
-        description: `Redirecting you to the ${isEditMode ? 'updated' : 'new'} problem.`,
-      });
-      router.push(`/problem/${result.problemId}`);
-      router.refresh(); // Force refresh to get new data
+        // 1. Upload new files via server action
+        const uploadResult = await uploadFilesAction(problem.id, formData);
+        if (!uploadResult.success) {
+            throw new Error(uploadResult.error || 'File upload failed.');
+        }
+        
+        // 2. Prepare data for Firestore update, merging existing paths with new ones
+        const codePaths = { ...problem.code, ...uploadResult.codePaths };
+
+        const updatedProblemData = {
+            title: formData.get('title') as string,
+            description: formData.get('description') as string,
+            tags: (formData.get('tags') as string || '').split(',').map(tag => tag.trim()).filter(Boolean),
+            flowchart: flowchartData,
+            code: codePaths,
+        };
+
+        // 3. Update Firestore document (this call is authenticated)
+        await updateDoc(problemRef, updatedProblemData);
+        
+        toast({
+            title: 'Problem Updated! 🎉',
+            description: 'The problem has been successfully updated.',
+        });
+        router.push(`/problem/${problem.id}`);
+        router.refresh();
+
+      } catch (error: any) {
+         toast({
+            title: "Update Error 😥",
+            description: error.message || "An unknown error occurred.",
+            variant: "destructive",
+        });
+        setIsSubmitting(false);
+      }
     } else {
-      toast({
-        title: "Submission Error 😥",
-        description: result.error || "An unknown error occurred.",
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
+      // Handle create logic via server action (as before)
+      formData.append('flowchart', flowchartData);
+      const result = await createProblemAction(formData);
+      if (result.success && result.problemId) {
+        toast({
+          title: 'Problem Submitted! 🎉',
+          description: 'Redirecting you to the new problem.',
+        });
+        router.push(`/problem/${result.problemId}`);
+        router.refresh();
+      } else {
+        toast({
+          title: "Submission Error 😥",
+          description: result.error || "An unknown error occurred.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+      }
     }
   };
 

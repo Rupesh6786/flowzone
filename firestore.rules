@@ -6,7 +6,10 @@ service cloud.firestore {
       // Anyone can read and create problems
       allow read, create: if true;
       
-      // Only authenticated users (admins) can update or delete
+      // Allow anyone to update comments and stats
+      allow update: if request.auth == null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments', 'stats']);
+      
+      // Allow authenticated admins to update anything
       allow update, delete: if request.auth != null;
     }
   }

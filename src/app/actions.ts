@@ -75,62 +75,34 @@ export async function createProblemAction(formData: FormData): Promise<{ success
   }
 }
 
-
-export async function updateProblemAction(problemId: string, formData: FormData): Promise<{ success: boolean; error?: string; problemId?: string }> {
-    try {
-        const problemRef = doc(db, 'problems', problemId);
-        const problemSnap = await getDoc(problemRef);
-
-        if (!problemSnap.exists()) {
-            return { success: false, error: 'Problem not found.' };
-        }
-
-        const existingData = problemSnap.data();
-
-        const title = formData.get('title') as string;
-        const description = formData.get('description') as string;
-        const tagsValue = formData.get('tags') as string | null;
-        const tags = tagsValue ? tagsValue.split(',').map(tag => tag.trim()).filter(Boolean) : [];
-        const flowchart = formData.get('flowchart') as string;
-
-        const cFile = formData.get('c-code') as File | null;
-        const cppFile = formData.get('cpp-code') as File | null;
-        const pyFile = formData.get('py-code') as File | null;
-
-        if (!title || !description) {
-            return { success: false, error: 'Title and description are required.' };
-        }
-
-        const codePaths = { ...existingData.code };
-
-        const cPath = await uploadFile(cFile, problemId);
-        if (cPath) codePaths.c = cPath;
-
-        const cppPath = await uploadFile(cppFile, problemId);
-        if (cppPath) codePaths.cpp = cppPath;
-
-        const pyPath = await uploadFile(pyFile, problemId);
-        if (pyPath) codePaths.py = pyPath;
-
-        const updatedProblemData = {
-            title,
-            description,
-            tags,
-            flowchart,
-            code: codePaths,
-        };
-
-        await updateDoc(problemRef, updatedProblemData);
-
-        revalidatePath('/');
-        revalidatePath(`/problem/${problemId}`);
-        revalidatePath(`/problem/${problemId}/edit`);
-
-        return { success: true, problemId: problemId };
-    } catch (error: any) {
-        console.error('Error updating problem:', error);
-        return { success: false, error: error.message };
+// This new action only handles file uploads for an existing problem.
+// The database update will be handled on the client.
+export async function uploadFilesAction(problemId: string, formData: FormData): Promise<{ success: boolean; error?: string; codePaths?: { c?: string; cpp?: string; py?: string; } }> {
+  try {
+    if (!problemId) {
+      return { success: false, error: "Problem ID is required for uploads." };
     }
+
+    const cFile = formData.get('c-code') as File | null;
+    const cppFile = formData.get('cpp-code') as File | null;
+    const pyFile = formData.get('py-code') as File | null;
+
+    const newPaths: { c?: string; cpp?: string; py?: string } = {};
+
+    const cPath = await uploadFile(cFile, problemId);
+    if (cPath) newPaths.c = cPath;
+
+    const cppPath = await uploadFile(cppFile, problemId);
+    if (cppPath) newPaths.cpp = cppPath;
+
+    const pyPath = await uploadFile(pyFile, problemId);
+    if (pyPath) newPaths.py = pyPath;
+    
+    return { success: true, codePaths: newPaths };
+  } catch (error: any) {
+    console.error('Error uploading files:', error);
+    return { success: false, error: error.message };
+  }
 }
 
 
