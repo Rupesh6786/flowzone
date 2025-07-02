@@ -111,8 +111,8 @@ export function DataNode({ data }: NodeProps<{ label: string }>) {
 
 export function LabelNode({ data }: NodeProps<{ label: string }>) {
   return (
-    <div className="text-foreground text-center break-words p-2 rounded-md bg-transparent border-2 border-dashed border-foreground/50 min-w-[100px]">
-        <span className="px-2">{data.label}</span>
+    <div className="text-foreground text-center break-words max-w-[200px] p-1 bg-transparent">
+      {data.label}
     </div>
   );
 }

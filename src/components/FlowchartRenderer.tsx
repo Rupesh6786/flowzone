@@ -7,7 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
 import ReactFlow, { Background, Controls, Node, Edge } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { TerminatorNode, ProcessNode, DecisionNode, InputOutputNode, PredefinedProcessNode, ConnectorNode, DataNode } from './CustomNodes';
+import { TerminatorNode, ProcessNode, DecisionNode, InputOutputNode, PredefinedProcessNode, ConnectorNode, DataNode, LabelNode } from './CustomNodes';
 
 
 const nodeTypes = {
@@ -18,6 +18,7 @@ const nodeTypes = {
   predefinedProcess: PredefinedProcessNode,
   connector: ConnectorNode,
   data: DataNode,
+  label: LabelNode,
 };
 
 function MermaidRenderer({ chart, getTheme }: { chart: string, getTheme: () => string }) {
