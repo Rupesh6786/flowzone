@@ -47,7 +47,7 @@ export function DecisionNode({ data }: NodeProps<{ label: string }>) {
       <div className="relative z-10 max-w-[70%] break-words">{data.label}</div>
       <Handle type="source" position={Position.Right} id="right" isConnectable={true} />
       <Handle type="source" position={Position.Bottom} id="bottom" isConnectable={true} />
-      <Handle type="target" position={Position.Left} id="left" isConnectable={true} />
+      <Handle type="source" position={Position.Left} id="left" isConnectable={true} />
     </div>
   );
 }
