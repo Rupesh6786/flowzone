@@ -44,14 +44,12 @@ export function Header() {
         </Link>
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-2">
-            {user && (
-              <Link href="/create">
-                <Button>
-                  <Upload className="mr-2 h-4 w-4" />
-                  New Problem
-                </Button>
-              </Link>
-            )}
+            <Link href="/create">
+              <Button>
+                <Upload className="mr-2 h-4 w-4" />
+                New Problem
+              </Button>
+            </Link>
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
