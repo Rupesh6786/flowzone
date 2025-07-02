@@ -55,6 +55,11 @@ export default function RootLayout({
             <main className="flex-1 container mx-auto px-4 py-8">
               {children}
             </main>
+            <footer className="py-6">
+              <p className="text-center text-sm text-muted-foreground">
+                Created with ❤️ by Rupesh Thakur
+              </p>
+            </footer>
           </div>
           <Toaster />
         </AuthProvider>
