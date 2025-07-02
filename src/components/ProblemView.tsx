@@ -7,13 +7,15 @@ import { CodeViewer } from "@/components/CodeViewer";
 import { FlowchartRenderer } from "@/components/FlowchartRenderer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Bookmark, Share2, Code2, Copy, Loader2 } from "lucide-react";
+import { Heart, Bookmark, Share2, Code2, Copy, Loader2, Pencil } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { CommentsSection } from "./CommentsSection";
 import { updateProblemStatsAction } from "@/app/actions";
+import { useAuth } from "@/context/AuthContext";
+import Link from "next/link";
 
 interface ProblemViewProps {
   problem: Problem;
@@ -24,6 +26,7 @@ export function ProblemView({ problem }: ProblemViewProps) {
   const [shareUrl, setShareUrl] = useState("");
   const [stats, setStats] = useState(problem.stats);
   const [isUpdating, setIsUpdating] = useState<"likes" | "saves" | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -58,11 +61,8 @@ export function ProblemView({ problem }: ProblemViewProps) {
       });
     }
     
-    // We can just leave the button disabled for this session after a successful click to prevent spam.
-    // Or reset the state to allow multiple clicks (for demo purposes, this is fine).
     if (result.success) {
-        // To allow multiple clicks in a session, we would reset the state.
-        // For now, we'll keep it disabled to simulate a real-world scenario.
+      // Keep button disabled for the session to prevent spam
     } else {
        setIsUpdating(null);
     }
@@ -123,6 +123,14 @@ export function ProblemView({ problem }: ProblemViewProps) {
               </div>
             </PopoverContent>
           </Popover>
+          {user && (
+            <Link href={`/problem/${problem.id}/edit`}>
+              <Button>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit Problem
+              </Button>
+            </Link>
+          )}
         </div>
       </section>
 

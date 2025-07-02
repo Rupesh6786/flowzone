@@ -1,24 +1,41 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
-import { createProblemAction } from "@/app/actions";
+import { createProblemAction, updateProblemAction } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FlowchartEditor } from "./FlowchartEditor";
+import type { Problem } from "@/lib/types";
 
-export function ProblemForm() {
-  const [description, setDescription] = useState("");
-  const [flowchartData, setFlowchartData] = useState("");
+interface ProblemFormProps {
+  problem?: Problem;
+}
+
+export function ProblemForm({ problem }: ProblemFormProps) {
+  const isEditMode = !!problem;
+  const [title, setTitle] = useState(problem?.title || "");
+  const [description, setDescription] = useState(problem?.description || "");
+  const [tags, setTags] = useState(problem?.tags?.join(', ') || "");
+  const [flowchartData, setFlowchartData] = useState(problem?.flowchart || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+
+  useEffect(() => {
+    if (problem) {
+      setTitle(problem.title);
+      setDescription(problem.description);
+      setTags(problem.tags.join(', '));
+      setFlowchartData(problem.flowchart);
+    }
+  }, [problem]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,16 +43,18 @@ export function ProblemForm() {
 
     const formData = new FormData(e.currentTarget);
     formData.append('flowchart', flowchartData);
-    formData.set('description', description);
 
-    const result = await createProblemAction(formData);
+    const result = isEditMode
+      ? await updateProblemAction(problem.id, formData)
+      : await createProblemAction(formData);
 
     if (result.success && result.problemId) {
       toast({
-        title: "Problem Submitted! 🎉",
-        description: "Thanks for your contribution! Redirecting you to the new problem.",
+        title: `Problem ${isEditMode ? 'Updated' : 'Submitted'}! 🎉`,
+        description: `Redirecting you to the ${isEditMode ? 'updated' : 'new'} problem.`,
       });
       router.push(`/problem/${result.problemId}`);
+      router.refresh(); // Force refresh to get new data
     } else {
       toast({
         title: "Submission Error 😥",
@@ -56,7 +75,7 @@ export function ProblemForm() {
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">Problem Title</Label>
-            <Input id="title" name="title" placeholder="e.g., Two Sum" required />
+            <Input id="title" name="title" placeholder="e.g., Two Sum" value={title} onChange={e => setTitle(e.target.value)} required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
@@ -72,7 +91,7 @@ export function ProblemForm() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="tags">Tags</Label>
-            <Input id="tags" name="tags" placeholder="e.g., array, hash-table, easy (comma-separated)" />
+            <Input id="tags" name="tags" placeholder="e.g., array, hash-table, easy (comma-separated)" value={tags} onChange={e => setTags(e.target.value)} />
           </div>
         </CardContent>
       </Card>
@@ -80,7 +99,7 @@ export function ProblemForm() {
       <Card className="bg-card/60">
         <CardHeader>
           <CardTitle>Code Solutions</CardTitle>
-          <CardDescription>Upload solution files for different languages.</CardDescription>
+          <CardDescription>Upload solution files for different languages. Re-upload to overwrite existing files.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
@@ -106,14 +125,14 @@ export function ProblemForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <FlowchartEditor onChange={setFlowchartData} />
+          <FlowchartEditor onChange={setFlowchartData} initialValue={flowchartData} />
         </CardContent>
       </Card>
 
       <div className="flex justify-end">
         <Button type="submit" size="lg" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Submit Problem
+          {isEditMode ? 'Update Problem' : 'Submit Problem'}
         </Button>
       </div>
     </form>

@@ -133,15 +133,30 @@ const PropertiesPanel = ({ selectedNode, onLabelChange }: { selectedNode: Node |
 
 interface FlowchartEditorProps {
     onChange: (flowData: string) => void;
+    initialValue?: string;
 }
 
-const DnDFlow = ({ onChange }: FlowchartEditorProps) => {
+const DnDFlow = ({ onChange, initialValue }: FlowchartEditorProps) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
   const selectedNode = useMemo(() => nodes.find((node) => node.selected), [nodes]);
+
+  useEffect(() => {
+    if (initialValue && reactFlowInstance) {
+        try {
+            const flow = JSON.parse(initialValue);
+            if (flow && flow.nodes) {
+                setNodes(flow.nodes || []);
+                setEdges(flow.edges || []);
+            }
+        } catch(e) {
+            console.error("Could not parse initial flowchart data", e);
+        }
+    }
+  }, [initialValue, reactFlowInstance, setNodes, setEdges]);
 
   useEffect(() => {
     if (reactFlowInstance) {
@@ -237,10 +252,10 @@ const DnDFlow = ({ onChange }: FlowchartEditorProps) => {
   );
 }
 
-export const FlowchartEditor: React.FC<FlowchartEditorProps> = ({ onChange }) => {
+export const FlowchartEditor: React.FC<FlowchartEditorProps> = ({ onChange, initialValue }) => {
     return (
         <ReactFlowProvider>
-            <DnDFlow onChange={onChange} />
+            <DnDFlow onChange={onChange} initialValue={initialValue} />
         </ReactFlowProvider>
     );
 }
