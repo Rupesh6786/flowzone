@@ -58,12 +58,13 @@ const Sidebar = () => {
         Process
       </div>
       <div
-        className="w-28 h-28 mx-auto flex items-center justify-center border-primary/50 border-2 border-dashed cursor-grab text-center bg-card hover:bg-card/90 hover:border-primary transition-colors"
-        style={{ clipPath: 'polygon(50% 0, 100% 50%, 50% 100%, 0 50%)' }}
+        className="h-28 flex items-center justify-center"
         onDragStart={(event) => onDragStart(event, 'decision', 'Decision')}
         draggable
       >
-        Decision
+        <div className="w-20 h-20 flex items-center justify-center transform rotate-45 bg-card hover:bg-card/90 text-center border-primary/50 border-2 border-dashed hover:border-primary transition-colors cursor-grab">
+            <span className="transform -rotate-45">Decision</span>
+        </div>
       </div>
       <div
         className="p-3 border-primary/50 border-2 border-dashed -skew-x-[20deg] cursor-grab text-center bg-card hover:bg-card/90 hover:border-primary transition-colors flex justify-center items-center"
