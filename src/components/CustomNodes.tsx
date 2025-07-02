@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { NodeProps } from 'reactflow';
@@ -10,7 +9,8 @@ const baseNodeStyles = "bg-card border-2 border-foreground shadow-md text-foregr
 
 export function TerminatorNode({ id, data }: NodeProps<{ label: string }>) {
   const { setNodes } = useReactFlow();
-  const handleEdit = () => {
+  const handleEdit = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
     const newLabel = prompt("Enter new label for the node:", data.label);
     if (newLabel !== null && newLabel.trim() !== '') {
       setNodes((nodes) =>
@@ -43,7 +43,8 @@ export function TerminatorNode({ id, data }: NodeProps<{ label: string }>) {
 
 export function ProcessNode({ id, data }: NodeProps<{ label:string }>) {
   const { setNodes } = useReactFlow();
-  const handleEdit = () => {
+  const handleEdit = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
     const newLabel = prompt("Enter new label for the node:", data.label);
     if (newLabel !== null && newLabel.trim() !== '') {
       setNodes((nodes) =>
@@ -78,7 +79,8 @@ export function ProcessNode({ id, data }: NodeProps<{ label:string }>) {
 
 export function DecisionNode({ id, data }: NodeProps<{ label: string }>) {
   const { setNodes } = useReactFlow();
-  const handleEdit = () => {
+  const handleEdit = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
     const newLabel = prompt("Enter new label for the node:", data.label);
     if (newLabel !== null && newLabel.trim() !== '') {
       setNodes((nodes) =>
@@ -116,7 +118,8 @@ export function DecisionNode({ id, data }: NodeProps<{ label: string }>) {
 
 export function InputOutputNode({ id, data }: NodeProps<{ label: string }>) {
     const { setNodes } = useReactFlow();
-    const handleEdit = () => {
+    const handleEdit = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
         const newLabel = prompt("Enter new label for the node:", data.label);
         if (newLabel !== null && newLabel.trim() !== '') {
             setNodes((nodes) =>
@@ -151,7 +154,8 @@ export function InputOutputNode({ id, data }: NodeProps<{ label: string }>) {
 
 export function PredefinedProcessNode({ id, data }: NodeProps<{ label: string }>) {
     const { setNodes } = useReactFlow();
-    const handleEdit = () => {
+    const handleEdit = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
         const newLabel = prompt("Enter new label for the node:", data.label);
         if (newLabel !== null && newLabel.trim() !== '') {
             setNodes((nodes) =>
@@ -188,7 +192,8 @@ export function PredefinedProcessNode({ id, data }: NodeProps<{ label: string }>
 
 export function ConnectorNode({ id, data }: NodeProps<{ label: string }>) {
     const { setNodes } = useReactFlow();
-    const handleEdit = () => {
+    const handleEdit = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
         const newLabel = prompt("Enter new label for the node:", data.label);
         if (newLabel !== null && newLabel.trim() !== '') {
             setNodes((nodes) =>
@@ -223,7 +228,8 @@ export function ConnectorNode({ id, data }: NodeProps<{ label: string }>) {
 
 export function DataNode({ id, data }: NodeProps<{ label: string }>) {
   const { setNodes } = useReactFlow();
-  const handleEdit = () => {
+  const handleEdit = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
     const newLabel = prompt("Enter new label for the node:", data.label);
     if (newLabel !== null && newLabel.trim() !== '') {
       setNodes((nodes) =>
@@ -258,7 +264,8 @@ export function DataNode({ id, data }: NodeProps<{ label: string }>) {
       <Handle type="target" position={Position.Top} isConnectable={true} />
       <Handle type="source" position={Position.Bottom} isConnectable={true} />
       <Handle type="target" position={Position.Left} isConnectable={true} />
-      <Handle type="source" position={Position.Right} isConnectable={true} />
+      <Handle type="source"
+position={Position.Right} isConnectable={true} />
     </div>
   );
 }
