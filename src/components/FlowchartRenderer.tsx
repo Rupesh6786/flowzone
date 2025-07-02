@@ -7,7 +7,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react";
 import ReactFlow, { Background, Controls, Node, Edge } from 'reactflow';
 import 'reactflow/dist/style.css';
+import { TerminatorNode, ProcessNode, DecisionNode } from './CustomNodes';
 
+
+const nodeTypes = {
+  terminator: TerminatorNode,
+  process: ProcessNode,
+  decision: DecisionNode,
+};
 
 function MermaidRenderer({ chart, getTheme }: { chart: string, getTheme: () => string }) {
     const [svg, setSvg] = useState<string | null>(null);
@@ -106,6 +113,7 @@ function ReactFlowRenderer({ chartData }: { chartData: string }) {
                 nodesConnectable={false}
                 zoomOnScroll={false}
                 panOnDrag={false}
+                nodeTypes={nodeTypes}
             >
                 <Background />
                 <Controls showInteractive={false} />

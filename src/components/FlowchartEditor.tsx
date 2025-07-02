@@ -15,6 +15,13 @@ import ReactFlow, {
   type ReactFlowInstance,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import { TerminatorNode, ProcessNode, DecisionNode } from './CustomNodes';
+
+const nodeTypes = {
+  terminator: TerminatorNode,
+  process: ProcessNode,
+  decision: DecisionNode,
+};
 
 const initialNodes: Node[] = [];
 const initialEdges: Edge[] = [];
@@ -30,25 +37,26 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="border-r-2 p-4 text-sm w-64 bg-background/80">
-      <div className="mb-4 font-semibold text-center">Drag to Add Nodes</div>
+    <aside className="border-r-2 p-4 text-sm w-64 bg-background/80 space-y-3">
+      <div className="mb-2 font-semibold text-center">Drag to Add Nodes</div>
       <div
-        className="p-3 border-primary/50 border-2 border-dashed rounded-md cursor-grab text-center bg-card hover:bg-card/90 hover:border-primary transition-colors"
-        onDragStart={(event) => onDragStart(event, 'input', 'Start/End')}
+        className="p-3 border-primary/50 border-2 border-dashed rounded-full cursor-grab text-center bg-card hover:bg-card/90 hover:border-primary transition-colors"
+        onDragStart={(event) => onDragStart(event, 'terminator', 'Start/End')}
         draggable
       >
         Terminator
       </div>
       <div
-        className="p-3 border-primary/50 border-2 border-dashed rounded-md cursor-grab text-center mt-2 bg-card hover:bg-card/90 hover:border-primary transition-colors"
-        onDragStart={(event) => onDragStart(event, 'default', 'Process')}
+        className="p-3 border-primary/50 border-2 border-dashed rounded-md cursor-grab text-center bg-card hover:bg-card/90 hover:border-primary transition-colors"
+        onDragStart={(event) => onDragStart(event, 'process', 'Process')}
         draggable
       >
         Process
       </div>
       <div
-        className="p-3 border-primary/50 border-2 border-dashed rounded-md cursor-grab text-center mt-2 bg-card hover:bg-card/90 hover:border-primary transition-colors"
-        onDragStart={(event) => onDragStart(event, 'default', 'Decision')}
+        className="w-28 h-28 mx-auto flex items-center justify-center border-primary/50 border-2 border-dashed cursor-grab text-center bg-card hover:bg-card/90 hover:border-primary transition-colors"
+        style={{ clipPath: 'polygon(50% 0, 100% 50%, 50% 100%, 0 50%)' }}
+        onDragStart={(event) => onDragStart(event, 'decision', 'Decision')}
         draggable
       >
         Decision
@@ -154,6 +162,7 @@ export const FlowchartEditor: React.FC<FlowchartEditorProps> = ({ onChange }) =>
             fitView
             proOptions={{ hideAttribution: true }}
             className="bg-background"
+            nodeTypes={nodeTypes}
           >
             <Controls />
             <Background gap={16} />
