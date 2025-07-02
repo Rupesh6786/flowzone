@@ -44,12 +44,12 @@ export default function Home() {
   }, [searchQuery, problems]);
 
   return (
-    <div className="flex flex-col items-center space-y-12">
-      <div className="text-center space-y-4 pt-16">
-        <h1 className="text-5xl md:text-7xl font-bold font-headline tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-foreground to-foreground/60">
+    <div className="flex flex-col items-center space-y-8 md:space-y-12">
+      <div className="text-center space-y-2 md:space-y-4 pt-8 md:pt-16">
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold font-headline tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-foreground to-foreground/60">
           FlowZone 🚀
         </h1>
-        <p className="text-lg md:text-xl text-muted-foreground max-w-2xl">
+        <p className="text-base md:text-xl text-muted-foreground max-w-2xl">
           Visualize Code. Master Logic. The Gen-Z way to understand algorithms.
         </p>
       </div>
