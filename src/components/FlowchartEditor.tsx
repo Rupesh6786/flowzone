@@ -138,25 +138,26 @@ interface FlowchartEditorProps {
 
 const DnDFlow = ({ onChange, initialValue }: FlowchartEditorProps) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+
+  const [initialState] = useState(() => {
+    if (initialValue && initialValue.length > 2) {
+      try {
+        const flow = JSON.parse(initialValue);
+        if (flow && flow.nodes) {
+          return { nodes: flow.nodes, edges: flow.edges || [] };
+        }
+      } catch (e) {
+        console.error("Could not parse initial flowchart data", e);
+      }
+    }
+    return { nodes: initialNodes, edges: initialEdges };
+  });
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialState.nodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialState.edges);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
   const selectedNode = useMemo(() => nodes.find((node) => node.selected), [nodes]);
-
-  useEffect(() => {
-    if (initialValue && reactFlowInstance) {
-        try {
-            const flow = JSON.parse(initialValue);
-            if (flow && flow.nodes) {
-                setNodes(flow.nodes || []);
-                setEdges(flow.edges || []);
-            }
-        } catch(e) {
-            console.error("Could not parse initial flowchart data", e);
-        }
-    }
-  }, [initialValue, reactFlowInstance, setNodes, setEdges]);
 
   useEffect(() => {
     if (reactFlowInstance) {
@@ -164,6 +165,7 @@ const DnDFlow = ({ onChange, initialValue }: FlowchartEditorProps) => {
       onChange(JSON.stringify(flow));
     }
   }, [nodes, edges, reactFlowInstance, onChange]);
+
 
   const onConnect: OnConnect = useCallback(
     (params) => setEdges((eds) => addEdge({ ...params, animated: true, type: 'smoothstep' }, eds)),
