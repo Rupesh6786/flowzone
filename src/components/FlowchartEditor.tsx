@@ -103,7 +103,7 @@ interface FlowchartEditorProps {
     onChange: (flowData: string) => void;
 }
 
-export const FlowchartEditor: React.FC<FlowchartEditorProps> = ({ onChange }) => {
+const DnDFlow = ({ onChange }: FlowchartEditorProps) => {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -156,10 +156,30 @@ export const FlowchartEditor: React.FC<FlowchartEditorProps> = ({ onChange }) =>
     },
     [reactFlowInstance, setNodes],
   );
+  
+  const onNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
+      const newLabel = prompt("Enter new label for the node:", node.data.label);
+      if (newLabel !== null && newLabel.trim() !== '') {
+        setNodes((nds) =>
+          nds.map((n) => {
+            if (n.id === node.id) {
+              return {
+                ...n,
+                data: {
+                  ...n.data,
+                  label: newLabel,
+                },
+              };
+            }
+            return n;
+          })
+        );
+      }
+    }, [setNodes]
+  );
 
   return (
     <div className="flex h-[500px] md:h-[600px] border rounded-lg overflow-hidden bg-card" ref={reactFlowWrapper}>
-      <ReactFlowProvider>
         <Sidebar />
         <div className="flex-grow h-full">
           <ReactFlow
@@ -171,6 +191,7 @@ export const FlowchartEditor: React.FC<FlowchartEditorProps> = ({ onChange }) =>
             onInit={setReactFlowInstance}
             onDrop={onDrop}
             onDragOver={onDragOver}
+            onNodeDoubleClick={onNodeDoubleClick}
             fitView
             proOptions={{ hideAttribution: true }}
             className="bg-background"
@@ -180,7 +201,14 @@ export const FlowchartEditor: React.FC<FlowchartEditorProps> = ({ onChange }) =>
             <Background gap={16} />
           </ReactFlow>
         </div>
-      </ReactFlowProvider>
     </div>
   );
-};
+}
+
+export const FlowchartEditor: React.FC<FlowchartEditorProps> = ({ onChange }) => {
+    return (
+        <ReactFlowProvider>
+            <DnDFlow onChange={onChange} />
+        </ReactFlowProvider>
+    );
+}

@@ -104,7 +104,7 @@ export function ProblemForm() {
           <CardDescription>
             Build your flowchart by dragging components from the sidebar. Connect nodes by dragging from one handle to another.
             <br />
-            <strong>To edit a node's text, hover over it and click the pencil icon.</strong>
+            <strong>To edit a node's text, double-click on it.</strong>
           </CardDescription>
         </CardHeader>
         <CardContent>
