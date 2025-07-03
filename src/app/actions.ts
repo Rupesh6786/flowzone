@@ -28,6 +28,7 @@ async function deleteFile(filePath: string | undefined) {
   try {
     const fullPath = path.join(process.cwd(), 'public', filePath);
     await fs.unlink(fullPath);
+    console.log(`Successfully deleted old file at ${fullPath}`);
   } catch (e: any) {
     // It's okay if the file doesn't exist, so we only log other errors
     if (e.code !== 'ENOENT') {
@@ -92,31 +93,40 @@ export async function createProblemAction(formData: FormData): Promise<{ success
 }
 
 export async function updateProblemAction(problemId: string, formData: FormData): Promise<{ success: boolean; error?: string; }> {
+    if (!problemId) {
+        return { success: false, error: "Problem ID is missing." };
+    }
+
+    const problemRef = adminDb.collection('problems').doc(problemId);
+    let oldProblemData: Problem;
+
+    // Step 1: Fetch existing data
     try {
-        if (!problemId) {
-            return { success: false, error: "Problem ID is missing." };
-        }
-        
-        const problemRef = adminDb.collection('problems').doc(problemId);
         const problemSnap = await problemRef.get();
         if (!problemSnap.exists) {
             return { success: false, error: "Problem not found. It might have been deleted." };
         }
-        const oldProblemData = problemSnap.data() as Problem;
-        const oldCodePaths = oldProblemData.code || {};
-        
-        const updatedData: { [key: string]: any } = {
-            title: formData.get('title') as string,
-            description: formData.get('description') as string,
-            tags: (formData.get('tags') as string || '').split(',').map(tag => tag.trim()).filter(Boolean),
-            flowchart: formData.get('flowchart') as string,
-            code: { ...oldCodePaths }
-        };
+        oldProblemData = problemSnap.data() as Problem;
+    } catch (error: any) {
+        console.error('[updateProblemAction DB Fetch Error]', error);
+        return { success: false, error: `Failed to fetch existing problem data: ${error.message}` };
+    }
+    
+    // Step 2: Prepare updated data and handle file operations
+    const oldCodePaths = oldProblemData.code || {};
+    const updatedData: { [key: string]: any } = {
+        title: formData.get('title') as string,
+        description: formData.get('description') as string,
+        tags: (formData.get('tags') as string || '').split(',').map(tag => tag.trim()).filter(Boolean),
+        flowchart: formData.get('flowchart') as string,
+        code: { ...oldCodePaths }
+    };
 
-        const cFile = formData.get('c-code') as File | null;
-        const cppFile = formData.get('cpp-code') as File | null;
-        const pyFile = formData.get('py-code') as File | null;
-        
+    const cFile = formData.get('c-code') as File | null;
+    const cppFile = formData.get('cpp-code') as File | null;
+    const pyFile = formData.get('py-code') as File | null;
+    
+    try {
         if (cFile && cFile.size > 0) {
             await deleteFile(oldCodePaths.c);
             updatedData.code.c = await saveFileAndGetPath(cFile, problemId);
@@ -129,21 +139,34 @@ export async function updateProblemAction(problemId: string, formData: FormData)
             await deleteFile(oldCodePaths.py);
             updatedData.code.py = await saveFileAndGetPath(pyFile, problemId);
         }
-        
-        await problemRef.update(updatedData);
-        
-        revalidatePath('/');
-        revalidatePath(`/problem/${problemId}`);
-        
-        return { success: true };
-    } catch (error: any) {
-        console.error('[updateProblemAction Error]', error);
-        let errorMessage = "An unexpected error occurred during the update.";
-        if (error.message) {
-          errorMessage = `Update failed: ${error.message}`;
-        }
-        return { success: false, error: errorMessage };
+    } catch (fileError: any) {
+        console.error('[updateProblemAction File Error]', fileError);
+        return { success: false, error: `Failed to process code files: ${fileError.message}` };
     }
+    
+    // Step 3: Update Firestore
+    try {
+        await problemRef.update(updatedData);
+    } catch (dbError: any) {
+        console.error('[updateProblemAction DB Update Error]', dbError);
+        // gRPC code 7 is PERMISSION_DENIED
+        if (dbError.code === 7 || dbError.code === 'permission-denied') { 
+             return { success: false, error: 'Database permission denied. This is likely a Firestore Rules issue.' };
+        }
+        return { success: false, error: `Failed to update database: ${dbError.message}` };
+    }
+    
+    // Step 4: Revalidate paths
+    try {
+      revalidatePath('/');
+      revalidatePath(`/problem/${problemId}`);
+    } catch (revalidateError: any) {
+       console.error('[updateProblemAction Revalidate Error]', revalidateError);
+       // This is not a critical failure, but good to know about.
+       // We can still return success.
+    }
+    
+    return { success: true };
 }
 
 
