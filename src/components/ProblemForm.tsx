@@ -7,13 +7,15 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
-import { createProblemAction, updateProblemAction } from "@/app/actions";
+import { handleFileUploadsAction } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FlowchartEditor } from "./FlowchartEditor";
 import type { Problem } from "@/lib/types";
 import { useAuth } from "@/context/AuthContext";
+import { doc, setDoc, updateDoc, collection, getDoc } from 'firebase/firestore';
+import { db } from "@/lib/firebase";
 
 interface ProblemFormProps {
   problem?: Problem;
@@ -59,41 +61,92 @@ export function ProblemForm({ problem }: ProblemFormProps) {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!user) {
+        toast({ title: "Authentication Error", description: "You must be logged in to perform this action.", variant: "destructive" });
+        return;
+    }
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    formData.append('flowchart', flowchartData);
+    const textData = {
+        title: formData.get('title') as string,
+        description: formData.get('description') as string,
+        tags: (formData.get('tags') as string || '').split(',').map(tag => tag.trim()).filter(Boolean),
+        flowchart: flowchartData,
+    };
 
     try {
       if (isEditMode && problem) {
-        const result = await updateProblemAction(problem.id, formData);
-        if (result.success) {
-          toast({
-            title: 'Problem Updated! 🎉',
-            description: 'The problem has been successfully updated.',
-          });
-          router.push(`/problem/${problem.id}`);
-          router.refresh();
-        } else {
-          throw new Error(result.error || "An unknown error occurred during update.");
+        // --- UPDATE LOGIC ---
+        const problemId = problem.id;
+        
+        // Step 1: Handle file uploads on the server
+        const fileResult = await handleFileUploadsAction(problemId, formData);
+        if (!fileResult.success) {
+            throw new Error(fileResult.error || "File upload failed.");
         }
+
+        // Step 2: Prepare data for client-side Firestore update
+        const problemRef = doc(db, 'problems', problemId);
+        const currentDocSnap = await getDoc(problemRef);
+        if (!currentDocSnap.exists()) {
+            throw new Error("Problem not found in the database. It might have been deleted.");
+        }
+        const currentCode = currentDocSnap.data().code || {};
+        
+        const updateData = {
+            ...textData,
+            code: {
+                ...currentCode,
+                ...fileResult.codePaths
+            }
+        };
+
+        // Step 3: Perform the update from the client (authenticated)
+        await updateDoc(problemRef, updateData);
+
+        toast({
+          title: 'Problem Updated! 🎉',
+          description: 'The problem has been successfully updated.',
+        });
+        router.push(`/problem/${problemId}`);
+        router.refresh();
+
       } else {
-        const result = await createProblemAction(formData);
-        if (result.success && result.problemId) {
-          toast({
-            title: 'Problem Submitted! 🎉',
-            description: 'Redirecting you to the new problem.',
-          });
-          router.push(`/problem/${result.problemId}`);
-          router.refresh();
-        } else {
-          throw new Error(result.error || "An unknown error occurred during creation.");
+        // --- CREATE LOGIC ---
+        // Step 1: Generate a new problem ID on the client
+        const newProblemRef = doc(collection(db, 'problems'));
+        const problemId = newProblemRef.id;
+
+        // Step 2: Handle file uploads on the server
+        const fileResult = await handleFileUploadsAction(problemId, formData);
+        if (!fileResult.success) {
+            throw new Error(fileResult.error || "File upload failed during creation.");
         }
+
+        // Step 3: Prepare the new problem object
+        const newProblem: Problem = {
+            id: problemId,
+            ...textData,
+            code: fileResult.codePaths || {},
+            stats: { likes: 0, saves: 0 },
+            comments: [],
+        };
+        
+        // Step 4: Create the document from the client (authenticated)
+        await setDoc(newProblemRef, newProblem);
+
+        toast({
+          title: 'Problem Submitted! 🎉',
+          description: 'Redirecting you to the new problem.',
+        });
+        router.push(`/problem/${problemId}`);
+        router.refresh();
       }
     } catch (error: any) {
       toast({
           title: "Operation Failed 😥",
-          description: error.message,
+          description: error.message || "An unknown error occurred.",
           variant: "destructive",
       });
     } finally {
@@ -166,7 +219,7 @@ export function ProblemForm({ problem }: ProblemFormProps) {
       </Card>
 
       <div className="flex justify-end">
-        <Button type="submit" size="lg" disabled={isSubmitting}>
+        <Button type="submit" size="lg" disabled={isSubmitting || authLoading}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isEditMode ? 'Update Problem' : 'Submit Problem'}
         </Button>

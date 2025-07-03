@@ -13,9 +13,11 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { CommentsSection } from "./CommentsSection";
-import { updateProblemStatsAction } from "@/app/actions";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from "@/lib/firebase";
+import { revalidatePath } from "next/cache";
 
 interface ProblemViewProps {
   problem: Problem;
@@ -48,23 +50,32 @@ export function ProblemView({ problem }: ProblemViewProps) {
     if (isUpdating) return;
     setIsUpdating(stat);
 
+    const problemRef = doc(db, 'problems', problem.id);
+    
+    // Optimistically update the UI
     setStats((prev) => ({ ...prev, [stat]: prev[stat] + 1 }));
 
-    const result = await updateProblemStatsAction(problem.id, stat);
+    try {
+        const problemSnap = await getDoc(problemRef);
+        if (!problemSnap.exists()) {
+            throw new Error("Problem not found.");
+        }
+        const currentCount = problemSnap.data().stats[stat] || 0;
+        const newCount = currentCount + 1;
 
-    if (!result.success) {
-      setStats((prev) => ({ ...prev, [stat]: prev[stat] - 1 }));
-      toast({
-        title: "Error",
-        description: result.error || "Could not update count. Please try again.",
-        variant: "destructive",
-      });
-    }
-    
-    if (result.success) {
-      // Keep button disabled for the session to prevent spam
-    } else {
-       setIsUpdating(null);
+        await updateDoc(problemRef, {
+            [`stats.${stat}`]: newCount,
+        });
+        
+    } catch (error: any) {
+        // Revert the UI on error
+        setStats((prev) => ({ ...prev, [stat]: prev[stat] - 1 }));
+        toast({
+            title: "Error",
+            description: "Could not update count. Please try again.",
+            variant: "destructive",
+        });
+        setIsUpdating(null); // Allow retry on failure
     }
   };
   
