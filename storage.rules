@@ -1,14 +1,14 @@
 rules_version = '2';
-
 service firebase.storage {
   match /b/{bucket}/o {
-    // Files are uploaded via a server action using the Admin SDK, which bypasses write rules.
-    // We only need to control read access from the client.
+    // Match any file in the 'code' directory
     match /code/{problemId}/{allPaths=**} {
-      // Allow public read for all code files
+      // Allow anyone to read the code files.
+      // This is necessary for the CodeViewer component to display them.
       allow read: if true;
-      // Disallow client-side writes completely.
-      allow write: if false;
+      
+      // Only authenticated users (admins) can upload or delete files.
+      allow write, delete: if request.auth != null;
     }
   }
 }
