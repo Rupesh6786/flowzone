@@ -95,7 +95,7 @@ export async function uploadFilesAction(problemId: string, formData: FormData): 
     const cppFile = formData.get('cpp-code') as File | null;
     const pyFile = formData.get('py-code') as File | null;
     
-    // Helper to delete old files
+    // Helper to delete old files from the local filesystem
     const deleteOldFile = async (filePath: string | undefined) => {
         if (!filePath) return;
         try {
@@ -109,9 +109,9 @@ export async function uploadFilesAction(problemId: string, formData: FormData): 
     };
 
     // Delete old files if new ones are being uploaded
-    if (cFile?.size) await deleteOldFile(oldProblemData.code.c);
-    if (cppFile?.size) await deleteOldFile(oldProblemData.code.cpp);
-    if (pyFile?.size) await deleteOldFile(oldProblemData.code.py);
+    if (cFile && cFile.size > 0) await deleteOldFile(oldProblemData.code.c);
+    if (cppFile && cppFile.size > 0) await deleteOldFile(oldProblemData.code.cpp);
+    if (pyFile && pyFile.size > 0) await deleteOldFile(oldProblemData.code.py);
 
     // Upload new files
     const newPaths: { c?: string; cpp?: string; py?: string } = {};
