@@ -9,10 +9,8 @@ import { revalidatePath } from 'next/cache';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-// Helper function to upload a file to the local public directory
-async function uploadFile(file: File | null, problemId: string): Promise<string | null> {
-  if (!file || file.size === 0) return null;
-  
+// Helper to save a file to the local public directory
+async function saveFileAndGetPath(file: File, problemId: string): Promise<string> {
   const directoryPath = path.join(process.cwd(), 'public', 'code', problemId);
   await fs.mkdir(directoryPath, { recursive: true });
 
@@ -23,6 +21,21 @@ async function uploadFile(file: File | null, problemId: string): Promise<string 
   // Return the public URL path
   return `/code/${problemId}/${file.name}`;
 };
+
+// Helper to delete a file from the local public directory
+async function deleteFile(filePath: string | undefined) {
+  if (!filePath) return;
+  try {
+    const fullPath = path.join(process.cwd(), 'public', filePath);
+    await fs.unlink(fullPath);
+  } catch (e: any) {
+    // It's okay if the file doesn't exist, so we only log other errors
+    if (e.code !== 'ENOENT') {
+      console.warn(`Could not delete old file at ${filePath}:`, e);
+    }
+  }
+};
+
 
 export async function createProblemAction(formData: FormData): Promise<{ success: boolean; error?: string; problemId?: string }> {
   try {
@@ -40,19 +53,20 @@ export async function createProblemAction(formData: FormData): Promise<{ success
         return { success: false, error: 'Title and description are required.' };
     }
 
-    const newProblemRef = doc(collection(db, 'problems'));
+    const newProblemRef = adminDb.collection('problems').doc();
     const problemId = newProblemRef.id;
 
     const codePaths: { c?: string; cpp?: string; py?: string } = {};
 
-    const cPath = await uploadFile(cFile, problemId);
-    if(cPath) codePaths.c = cPath;
-
-    const cppPath = await uploadFile(cppFile, problemId);
-    if(cppPath) codePaths.cpp = cppPath;
-
-    const pyPath = await uploadFile(pyFile, problemId);
-    if(pyPath) codePaths.py = pyPath;
+    if (cFile && cFile.size > 0) {
+      codePaths.c = await saveFileAndGetPath(cFile, problemId);
+    }
+    if (cppFile && cppFile.size > 0) {
+      codePaths.cpp = await saveFileAndGetPath(cppFile, problemId);
+    }
+    if (pyFile && pyFile.size > 0) {
+      codePaths.py = await saveFileAndGetPath(pyFile, problemId);
+    }
 
     const newProblem: Problem = {
       id: problemId,
@@ -65,71 +79,71 @@ export async function createProblemAction(formData: FormData): Promise<{ success
       comments: [],
     };
     
-    await setDoc(doc(db, 'problems', problemId), newProblem);
+    await newProblemRef.set(newProblem);
 
     revalidatePath('/');
     revalidatePath(`/problem/${problemId}`);
 
     return { success: true, problemId };
   } catch (error: any) {
-    console.error('Error creating problem:', error);
-    return { success: false, error: error.message };
+    console.error('[createProblemAction Error]', error);
+    return { success: false, error: `Failed to create problem: ${error.message}` };
   }
 }
 
-export async function uploadFilesAction(problemId: string, formData: FormData): Promise<{ success: boolean; error?: string; codePaths?: { c?: string; cpp?: string; py?: string; } }> {
-  try {
-    if (!problemId) {
-      return { success: false, error: "Problem ID is required for uploads." };
-    }
-    
-    // Fetch existing problem data to get old file paths for deletion
-    const problemRef = adminDb.collection('problems').doc(problemId);
-    const problemSnap = await problemRef.get();
-    if (!problemSnap.exists) {
-        return { success: false, error: "Problem not found during file update." };
-    }
-    const oldProblemData = problemSnap.data() as Problem;
-
-    const cFile = formData.get('c-code') as File | null;
-    const cppFile = formData.get('cpp-code') as File | null;
-    const pyFile = formData.get('py-code') as File | null;
-    
-    // Helper to delete old files from the local filesystem
-    const deleteOldFile = async (filePath: string | undefined) => {
-        if (!filePath) return;
-        try {
-            await fs.unlink(path.join(process.cwd(), 'public', filePath));
-        } catch (e: any) {
-            // It's okay if the file doesn't exist, so we only log other errors
-            if (e.code !== 'ENOENT') {
-                console.warn(`Could not delete old file: ${filePath}`, e);
-            }
+export async function updateProblemAction(problemId: string, formData: FormData): Promise<{ success: boolean; error?: string; }> {
+    try {
+        if (!problemId) {
+            return { success: false, error: "Problem ID is missing." };
         }
-    };
+        
+        const problemRef = adminDb.collection('problems').doc(problemId);
+        const problemSnap = await problemRef.get();
+        if (!problemSnap.exists) {
+            return { success: false, error: "Problem not found. It might have been deleted." };
+        }
+        const oldProblemData = problemSnap.data() as Problem;
+        const oldCodePaths = oldProblemData.code || {};
+        
+        const updatedData: { [key: string]: any } = {
+            title: formData.get('title') as string,
+            description: formData.get('description') as string,
+            tags: (formData.get('tags') as string || '').split(',').map(tag => tag.trim()).filter(Boolean),
+            flowchart: formData.get('flowchart') as string,
+            code: { ...oldCodePaths }
+        };
 
-    // Delete old files if new ones are being uploaded
-    if (cFile && cFile.size > 0) await deleteOldFile(oldProblemData.code.c);
-    if (cppFile && cppFile.size > 0) await deleteOldFile(oldProblemData.code.cpp);
-    if (pyFile && pyFile.size > 0) await deleteOldFile(oldProblemData.code.py);
-
-    // Upload new files
-    const newPaths: { c?: string; cpp?: string; py?: string } = {};
-
-    const cPath = await uploadFile(cFile, problemId);
-    if (cPath) newPaths.c = cPath;
-
-    const cppPath = await uploadFile(cppFile, problemId);
-    if (cppPath) newPaths.cpp = cppPath;
-
-    const pyPath = await uploadFile(pyFile, problemId);
-    if (pyPath) newPaths.py = pyPath;
-    
-    return { success: true, codePaths: newPaths };
-  } catch (error: any) {
-    console.error('Error uploading files:', error);
-    return { success: false, error: error.message };
-  }
+        const cFile = formData.get('c-code') as File | null;
+        const cppFile = formData.get('cpp-code') as File | null;
+        const pyFile = formData.get('py-code') as File | null;
+        
+        if (cFile && cFile.size > 0) {
+            await deleteFile(oldCodePaths.c);
+            updatedData.code.c = await saveFileAndGetPath(cFile, problemId);
+        }
+        if (cppFile && cppFile.size > 0) {
+            await deleteFile(oldCodePaths.cpp);
+            updatedData.code.cpp = await saveFileAndGetPath(cppFile, problemId);
+        }
+        if (pyFile && pyFile.size > 0) {
+            await deleteFile(oldCodePaths.py);
+            updatedData.code.py = await saveFileAndGetPath(pyFile, problemId);
+        }
+        
+        await problemRef.update(updatedData);
+        
+        revalidatePath('/');
+        revalidatePath(`/problem/${problemId}`);
+        
+        return { success: true };
+    } catch (error: any) {
+        console.error('[updateProblemAction Error]', error);
+        let errorMessage = "An unexpected error occurred during the update.";
+        if (error.message) {
+          errorMessage = `Update failed: ${error.message}`;
+        }
+        return { success: false, error: errorMessage };
+    }
 }
 
 
