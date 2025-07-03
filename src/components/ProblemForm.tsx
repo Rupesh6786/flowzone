@@ -48,6 +48,7 @@ export function ProblemForm({ problem }: ProblemFormProps) {
     }
   }, [problem]);
 
+  // Prevent anonymous users from even seeing the edit form
   if (isEditMode && (authLoading || !user)) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-200px)]">
@@ -61,10 +62,7 @@ export function ProblemForm({ problem }: ProblemFormProps) {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user) {
-        toast({ title: "Authentication Error", description: "You must be logged in to perform this action.", variant: "destructive" });
-        return;
-    }
+    
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
@@ -78,16 +76,18 @@ export function ProblemForm({ problem }: ProblemFormProps) {
     try {
       if (isEditMode && problem) {
         // --- UPDATE LOGIC ---
+        if (!user) {
+          throw new Error("You must be logged in to update a problem.");
+        }
         const problemId = problem.id;
         
-        // Step 1: Handle file uploads on the server
         const fileResult = await handleFileUploadsAction(problemId, formData);
         if (!fileResult.success) {
             throw new Error(fileResult.error || "File upload failed.");
         }
 
-        // Step 2: Prepare data for client-side Firestore update
         const problemRef = doc(db, 'problems', problemId);
+        
         const currentDocSnap = await getDoc(problemRef);
         if (!currentDocSnap.exists()) {
             throw new Error("Problem not found in the database. It might have been deleted.");
@@ -102,7 +102,6 @@ export function ProblemForm({ problem }: ProblemFormProps) {
             }
         };
 
-        // Step 3: Perform the update from the client (authenticated)
         await updateDoc(problemRef, updateData);
 
         toast({
@@ -114,17 +113,15 @@ export function ProblemForm({ problem }: ProblemFormProps) {
 
       } else {
         // --- CREATE LOGIC ---
-        // Step 1: Generate a new problem ID on the client
+        // No user check here - anyone can create a problem
         const newProblemRef = doc(collection(db, 'problems'));
         const problemId = newProblemRef.id;
 
-        // Step 2: Handle file uploads on the server
         const fileResult = await handleFileUploadsAction(problemId, formData);
         if (!fileResult.success) {
             throw new Error(fileResult.error || "File upload failed during creation.");
         }
 
-        // Step 3: Prepare the new problem object
         const newProblem: Problem = {
             id: problemId,
             ...textData,
@@ -133,7 +130,6 @@ export function ProblemForm({ problem }: ProblemFormProps) {
             comments: [],
         };
         
-        // Step 4: Create the document from the client (authenticated)
         await setDoc(newProblemRef, newProblem);
 
         toast({
@@ -219,7 +215,7 @@ export function ProblemForm({ problem }: ProblemFormProps) {
       </Card>
 
       <div className="flex justify-end">
-        <Button type="submit" size="lg" disabled={isSubmitting || authLoading}>
+        <Button type="submit" size="lg" disabled={isSubmitting || (isEditMode && authLoading)}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isEditMode ? 'Update Problem' : 'Submit Problem'}
         </Button>

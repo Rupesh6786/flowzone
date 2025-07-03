@@ -47,6 +47,7 @@ export async function handleFileUploadsAction(problemId: string, formData: FormD
   
   // Fetch existing data to get old file paths for deletion
   try {
+    // Use the ADMIN SDK on the server to bypass security rules for this internal operation
     const problemRef = adminDb.collection('problems').doc(problemId);
     const problemSnap = await problemRef.get();
     if (problemSnap.exists) {
