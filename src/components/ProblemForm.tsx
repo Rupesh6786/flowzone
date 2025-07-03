@@ -7,13 +7,15 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
-import { createProblemAction, updateProblemAction } from "@/app/actions";
+import { uploadCodeFilesAction } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FlowchartEditor } from "./FlowchartEditor";
 import type { Problem } from "@/lib/types";
 import { useAuth } from "@/context/AuthContext";
+import { doc, setDoc, updateDoc, collection } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface ProblemFormProps {
   problem?: Problem;
@@ -24,18 +26,18 @@ export function ProblemForm({ problem }: ProblemFormProps) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
-  useEffect(() => {
-    if (isEditMode && !authLoading && !user) {
-      router.push('/login');
-    }
-  }, [isEditMode, user, authLoading, router]);
-
   const [title, setTitle] = useState(problem?.title || "");
   const [description, setDescription] = useState(problem?.description || "");
   const [tags, setTags] = useState(problem?.tags?.join(', ') || "");
   const [flowchartData, setFlowchartData] = useState(problem?.flowchart || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isEditMode && !authLoading && !user) {
+      router.push('/login');
+    }
+  }, [isEditMode, user, authLoading, router]);
 
   useEffect(() => {
     if (problem) {
@@ -45,6 +47,71 @@ export function ProblemForm({ problem }: ProblemFormProps) {
       setFlowchartData(problem.flowchart);
     }
   }, [problem]);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    const formData = new FormData(e.currentTarget);
+    const problemId = problem?.id || doc(collection(db, 'problems')).id;
+
+    try {
+        // Step 1: Upload files via Server Action
+        const uploadResult = await uploadCodeFilesAction(formData, problemId, problem?.code);
+        if (!uploadResult.success) {
+            throw new Error(uploadResult.error || "File upload failed.");
+        }
+
+        // Step 2: Prepare data for Firestore
+        const problemData: Omit<Problem, 'id'> = {
+            title: formData.get('title') as string,
+            description: formData.get('description') as string,
+            tags: (formData.get('tags') as string || '').split(',').map(tag => tag.trim()).filter(Boolean),
+            flowchart: flowchartData,
+            code: uploadResult.codePaths,
+            stats: problem?.stats || { likes: 0, saves: 0 },
+            comments: problem?.comments || [],
+        };
+        
+        // Step 3: Write to Firestore from Client
+        const problemRef = doc(db, 'problems', problemId);
+
+        if (isEditMode) {
+            if (!user) throw new Error("You must be logged in to update a problem.");
+            await updateDoc(problemRef, {
+                title: problemData.title,
+                description: problemData.description,
+                tags: problemData.tags,
+                flowchart: problemData.flowchart,
+                code: problemData.code,
+            });
+            toast({
+                title: 'Problem Updated! 🎉',
+                description: 'The problem has been successfully updated.',
+            });
+            router.push(`/problem/${problemId}`);
+
+        } else {
+             await setDoc(problemRef, { ...problemData, id: problemId });
+             toast({
+                title: 'Problem Submitted! 🎉',
+                description: 'Redirecting you to the new problem.',
+            });
+            router.push(`/problem/${problemId}`);
+        }
+        router.refresh();
+
+    } catch (error: any) {
+        console.error("Form submission error:", error);
+        toast({
+            title: "Operation Failed 😥",
+            description: error.message,
+            variant: "destructive",
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
 
   if (isEditMode && (authLoading || !user)) {
     return (
@@ -56,53 +123,6 @@ export function ProblemForm({ problem }: ProblemFormProps) {
       </div>
     );
   }
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    const formData = new FormData(e.currentTarget);
-    formData.append('flowchartData', flowchartData);
-
-    try {
-      if (isEditMode && problem) {
-        if (!user) throw new Error("You must be logged in to update a problem.");
-        
-        const result = await updateProblemAction(problem.id, formData);
-        if (!result.success) {
-            throw new Error(result.error || "An unknown error occurred during update.");
-        }
-
-        toast({
-          title: 'Problem Updated! 🎉',
-          description: 'The problem has been successfully updated.',
-        });
-        router.push(`/problem/${problem.id}`);
-        router.refresh();
-
-      } else {
-        const result = await createProblemAction(formData);
-        if (!result.success || !result.problemId) {
-            throw new Error(result.error || "An unknown error occurred during creation.");
-        }
-
-        toast({
-          title: 'Problem Submitted! 🎉',
-          description: 'Redirecting you to the new problem.',
-        });
-        router.push(`/problem/${result.problemId}`);
-        router.refresh();
-      }
-    } catch (error: any) {
-      toast({
-          title: "Operation Failed 😥",
-          description: error.message,
-          variant: "destructive",
-      });
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -169,7 +189,7 @@ export function ProblemForm({ problem }: ProblemFormProps) {
       </Card>
 
       <div className="flex justify-end">
-        <Button type="submit" size="lg" disabled={isSubmitting || (isEditMode && authLoading)}>
+        <Button type="submit" size="lg" disabled={isSubmitting || (isEditMode && authLoading && !user)}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isEditMode ? 'Update Problem' : 'Submit Problem'}
         </Button>
