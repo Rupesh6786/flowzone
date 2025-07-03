@@ -7,7 +7,7 @@ import { CodeViewer } from "@/components/CodeViewer";
 import { FlowchartRenderer } from "@/components/FlowchartRenderer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Heart, Bookmark, Share2, Code2, Copy, Loader2, Pencil } from "lucide-react";
+import { Heart, Bookmark, Share2, Code2, Copy, Pencil } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -15,9 +15,8 @@ import { useState, useEffect } from "react";
 import { CommentsSection } from "./CommentsSection";
 import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from "@/lib/firebase";
-import { revalidatePath } from "next/cache";
 
 interface ProblemViewProps {
   problem: Problem;
@@ -50,32 +49,28 @@ export function ProblemView({ problem }: ProblemViewProps) {
     if (isUpdating) return;
     setIsUpdating(stat);
 
-    const problemRef = doc(db, 'problems', problem.id);
-    
-    // Optimistically update the UI
+    // Optimistically update the UI for an instant response
     setStats((prev) => ({ ...prev, [stat]: prev[stat] + 1 }));
 
+    const problemRef = doc(db, 'problems', problem.id);
+    
     try {
-        const problemSnap = await getDoc(problemRef);
-        if (!problemSnap.exists()) {
-            throw new Error("Problem not found.");
-        }
-        const currentCount = problemSnap.data().stats[stat] || 0;
-        const newCount = currentCount + 1;
-
+        // Use Firestore's atomic increment operation. This is faster and safer.
         await updateDoc(problemRef, {
-            [`stats.${stat}`]: newCount,
+            [`stats.${stat}`]: increment(1),
         });
         
     } catch (error: any) {
-        // Revert the UI on error
+        // If the update fails, revert the UI change and notify the user.
         setStats((prev) => ({ ...prev, [stat]: prev[stat] - 1 }));
         toast({
             title: "Error",
             description: "Could not update count. Please try again.",
             variant: "destructive",
         });
-        setIsUpdating(null); // Allow retry on failure
+    } finally {
+        // Re-enable the button regardless of success or failure.
+        setIsUpdating(null);
     }
   };
   
@@ -92,20 +87,12 @@ export function ProblemView({ problem }: ProblemViewProps) {
           </div>
         </div>
         <div className="mt-6 flex items-center space-x-4">
-          <Button variant="outline" onClick={() => handleStatUpdate('likes')} disabled={isUpdating === 'likes'}>
-            {isUpdating === 'likes' ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Heart className="mr-2 h-4 w-4" />
-            )}
+          <Button variant="outline" onClick={() => handleStatUpdate('likes')} disabled={!!isUpdating}>
+            <Heart className="mr-2 h-4 w-4" />
             Like ({stats.likes})
           </Button>
-          <Button variant="outline" onClick={() => handleStatUpdate('saves')} disabled={isUpdating === 'saves'}>
-             {isUpdating === 'saves' ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Bookmark className="mr-2 h-4 w-4" />
-            )}
+          <Button variant="outline" onClick={() => handleStatUpdate('saves')} disabled={!!isUpdating}>
+            <Bookmark className="mr-2 h-4 w-4" />
             Save ({stats.saves})
           </Button>
           <Popover>
