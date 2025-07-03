@@ -7,15 +7,13 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
-import { handleFileUploadsAction } from "@/app/actions";
+import { createProblemAction, updateProblemAction } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FlowchartEditor } from "./FlowchartEditor";
 import type { Problem } from "@/lib/types";
 import { useAuth } from "@/context/AuthContext";
-import { doc, setDoc, updateDoc, collection, getDoc } from 'firebase/firestore';
-import { db } from "@/lib/firebase";
 
 interface ProblemFormProps {
   problem?: Problem;
@@ -48,7 +46,6 @@ export function ProblemForm({ problem }: ProblemFormProps) {
     }
   }, [problem]);
 
-  // Prevent anonymous users from even seeing the edit form
   if (isEditMode && (authLoading || !user)) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-200px)]">
@@ -62,87 +59,44 @@ export function ProblemForm({ problem }: ProblemFormProps) {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    const textData = {
-        title: formData.get('title') as string,
-        description: formData.get('description') as string,
-        tags: (formData.get('tags') as string || '').split(',').map(tag => tag.trim()).filter(Boolean),
-        flowchart: flowchartData,
-    };
+    formData.append('flowchartData', flowchartData);
 
     try {
       if (isEditMode && problem) {
-        // --- UPDATE LOGIC ---
-        if (!user) {
-          throw new Error("You must be logged in to update a problem.");
-        }
-        const problemId = problem.id;
+        if (!user) throw new Error("You must be logged in to update a problem.");
         
-        const fileResult = await handleFileUploadsAction(problemId, formData);
-        if (!fileResult.success) {
-            throw new Error(fileResult.error || "File upload failed.");
+        const result = await updateProblemAction(problem.id, formData);
+        if (!result.success) {
+            throw new Error(result.error || "An unknown error occurred during update.");
         }
-
-        const problemRef = doc(db, 'problems', problemId);
-        
-        const currentDocSnap = await getDoc(problemRef);
-        if (!currentDocSnap.exists()) {
-            throw new Error("Problem not found in the database. It might have been deleted.");
-        }
-        const currentCode = currentDocSnap.data().code || {};
-        
-        const updateData = {
-            ...textData,
-            code: {
-                ...currentCode,
-                ...fileResult.codePaths
-            }
-        };
-
-        await updateDoc(problemRef, updateData);
 
         toast({
           title: 'Problem Updated! 🎉',
           description: 'The problem has been successfully updated.',
         });
-        router.push(`/problem/${problemId}`);
+        router.push(`/problem/${problem.id}`);
         router.refresh();
 
       } else {
-        // --- CREATE LOGIC ---
-        // No user check here - anyone can create a problem
-        const newProblemRef = doc(collection(db, 'problems'));
-        const problemId = newProblemRef.id;
-
-        const fileResult = await handleFileUploadsAction(problemId, formData);
-        if (!fileResult.success) {
-            throw new Error(fileResult.error || "File upload failed during creation.");
+        const result = await createProblemAction(formData);
+        if (!result.success || !result.problemId) {
+            throw new Error(result.error || "An unknown error occurred during creation.");
         }
-
-        const newProblem: Problem = {
-            id: problemId,
-            ...textData,
-            code: fileResult.codePaths || {},
-            stats: { likes: 0, saves: 0 },
-            comments: [],
-        };
-        
-        await setDoc(newProblemRef, newProblem);
 
         toast({
           title: 'Problem Submitted! 🎉',
           description: 'Redirecting you to the new problem.',
         });
-        router.push(`/problem/${problemId}`);
+        router.push(`/problem/${result.problemId}`);
         router.refresh();
       }
     } catch (error: any) {
       toast({
           title: "Operation Failed 😥",
-          description: error.message || "An unknown error occurred.",
+          description: error.message,
           variant: "destructive",
       });
     } finally {
@@ -184,7 +138,7 @@ export function ProblemForm({ problem }: ProblemFormProps) {
       <Card className="bg-card/60">
         <CardHeader>
           <CardTitle>Code Solutions</CardTitle>
-          <CardDescription>Upload solution files for different languages. Re-upload to overwrite existing files.</CardDescription>
+          <CardDescription>Upload solution files for different languages. Re-uploading will replace the existing file.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">

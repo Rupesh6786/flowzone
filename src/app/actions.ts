@@ -3,19 +3,16 @@
 
 import { adminDb, adminStorage } from '@/lib/firebase-admin';
 import type { Comment, Problem } from '@/lib/types';
-import { arrayUnion, doc, updateDoc } from 'firebase/firestore';
+import { arrayUnion, doc, increment, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { revalidatePath } from 'next/cache';
 
-// Helper to delete a file from Cloud Storage from a full URL
+// Helper to delete a file from Cloud Storage given its full URL
 async function deleteFileFromStorage(fileUrl: string | undefined) {
   if (!fileUrl) return;
   try {
-    // Firebase Storage URLs have a specific format. We need to extract the path.
-    // Example URL: https://storage.googleapis.com/your-bucket-name/code/problem-id/file.c
     const url = new URL(fileUrl);
     const bucketName = adminStorage.bucket().name;
-    // The pathname includes a leading slash and the bucket name, which we remove.
     const filePath = decodeURIComponent(url.pathname).replace(`/${bucketName}/`, '');
     
     if (filePath) {
@@ -23,7 +20,6 @@ async function deleteFileFromStorage(fileUrl: string | undefined) {
       console.log(`Successfully deleted old file from Storage: ${filePath}`);
     }
   } catch (e: any) {
-    // It's okay if the file doesn't exist (e.g., manual deletion), so we only log other errors
     if (e.code !== 404) {
       console.warn(`Could not delete old file at ${fileUrl}:`, e.message);
     }
@@ -44,62 +40,105 @@ async function saveFileToStorageAndGetUrl(file: File, problemId: string): Promis
     },
   });
 
-  // Make the file public so it can be fetched by the client CodeViewer
   await fileUpload.makePublic();
-  
-  // Return the public URL, which is a permanent link to the file
   return fileUpload.publicUrl();
 }
 
+export async function createProblemAction(formData: FormData): Promise<{ success: boolean; error?: string; problemId?: string; }> {
+    const newProblemRef = adminDb.collection('problems').doc();
+    const problemId = newProblemRef.id;
 
-export async function handleFileUploadsAction(problemId: string, formData: FormData): Promise<{ success: boolean; error?: string; codePaths?: { c?: string; cpp?: string; py?: string; } }> {
-  if (!problemId) {
-    return { success: false, error: "Problem ID is missing for file upload." };
-  }
-  
-  let oldProblemData: Problem | null = null;
-  
-  // Fetch existing data to get old file paths for deletion
-  try {
-    // Use the ADMIN SDK on the server to bypass security rules for this internal operation
-    const problemRef = adminDb.collection('problems').doc(problemId);
-    const problemSnap = await problemRef.get();
-    if (problemSnap.exists) {
-        oldProblemData = problemSnap.data() as Problem;
+    try {
+        const textData = {
+            title: formData.get('title') as string,
+            description: formData.get('description') as string,
+            tags: (formData.get('tags') as string || '').split(',').map(tag => tag.trim()).filter(Boolean),
+            flowchart: formData.get('flowchartData') as string,
+        };
+
+        const codePathsToUpdate: { c?: string; cpp?: string; py?: string } = {};
+        const cFile = formData.get('c-code') as File | null;
+        const cppFile = formData.get('cpp-code') as File | null;
+        const pyFile = formData.get('py-code') as File | null;
+
+        if (cFile && cFile.size > 0) codePathsToUpdate.c = await saveFileToStorageAndGetUrl(cFile, problemId);
+        if (cppFile && cppFile.size > 0) codePathsToUpdate.cpp = await saveFileToStorageAndGetUrl(cppFile, problemId);
+        if (pyFile && pyFile.size > 0) codePathsToUpdate.py = await saveFileToStorageAndGetUrl(pyFile, problemId);
+
+        const newProblem: Problem = {
+            id: problemId,
+            ...textData,
+            code: codePathsToUpdate,
+            stats: { likes: 0, saves: 0 },
+            comments: [],
+        };
+        
+        await newProblemRef.set(newProblem);
+
+        revalidatePath('/');
+        return { success: true, problemId };
+
+    } catch (e: any) {
+        console.error('[createProblemAction Error]', e);
+        return { success: false, error: e.message || 'An unknown error occurred during problem creation.' };
     }
-  } catch (error: any) {
-     console.warn(`Could not fetch old problem data for cleanup: ${error.message}`);
-  }
+}
 
-  const oldCodePaths = oldProblemData?.code || {};
-  const newCodePaths: { c?: string; cpp?: string; py?: string } = {};
-  
-  const cFile = formData.get('c-code') as File | null;
-  const cppFile = formData.get('cpp-code') as File | null;
-  const pyFile = formData.get('py-code') as File | null;
-
-  try {
-    if (cFile && cFile.size > 0) {
-      await deleteFileFromStorage(oldCodePaths.c);
-      newCodePaths.c = await saveFileToStorageAndGetUrl(cFile, problemId);
-    }
-    if (cppFile && cppFile.size > 0) {
-      await deleteFileFromStorage(oldCodePaths.cpp);
-      newCodePaths.cpp = await saveFileToStorageAndGetUrl(cppFile, problemId);
-    }
-    if (pyFile && pyFile.size > 0) {
-      await deleteFileFromStorage(oldCodePaths.py);
-      newCodePaths.py = await saveFileToStorageAndGetUrl(pyFile, problemId);
+export async function updateProblemAction(problemId: string, formData: FormData): Promise<{ success: boolean; error?: string; }> {
+     if (!problemId) {
+        return { success: false, error: "Problem ID is missing." };
     }
 
-    revalidatePath('/');
-    revalidatePath(`/problem/${problemId}`);
+    try {
+        const problemRef = adminDb.collection('problems').doc(problemId);
+        const problemSnap = await problemRef.get();
+        if (!problemSnap.exists) {
+            throw new Error("Problem not found in the database. It may have been deleted.");
+        }
+        const oldProblemData = problemSnap.data() as Problem;
 
-    return { success: true, codePaths: newCodePaths };
-  } catch (fileError: any) {
-      console.error('[handleFileUploadsAction Storage Error]', fileError);
-      return { success: false, error: `Failed to process code files for Cloud Storage: ${fileError.message}` };
-  }
+        const textData = {
+            title: formData.get('title') as string,
+            description: formData.get('description') as string,
+            tags: (formData.get('tags') as string || '').split(',').map(tag => tag.trim()).filter(Boolean),
+            flowchart: formData.get('flowchartData') as string,
+        };
+
+        const codePathsToUpdate = { ...oldProblemData.code };
+        const oldCodePaths = oldProblemData.code || {};
+        const cFile = formData.get('c-code') as File | null;
+        const cppFile = formData.get('cpp-code') as File | null;
+        const pyFile = formData.get('py-code') as File | null;
+
+        if (cFile && cFile.size > 0) {
+            await deleteFileFromStorage(oldCodePaths.c);
+            codePathsToUpdate.c = await saveFileToStorageAndGetUrl(cFile, problemId);
+        }
+        if (cppFile && cppFile.size > 0) {
+            await deleteFileFromStorage(oldCodePaths.cpp);
+            codePathsToUpdate.cpp = await saveFileToStorageAndGetUrl(cppFile, problemId);
+        }
+        if (pyFile && pyFile.size > 0) {
+            await deleteFileFromStorage(oldCodePaths.py);
+            codePathsToUpdate.py = await saveFileToStorageAndGetUrl(pyFile, problemId);
+        }
+
+        const finalUpdateData = {
+            ...textData,
+            code: codePathsToUpdate,
+        };
+
+        await problemRef.update(finalUpdateData);
+        
+        revalidatePath('/');
+        revalidatePath(`/problem/${problemId}`);
+
+        return { success: true };
+
+    } catch (e: any) {
+        console.error('[updateProblemAction Error]', e);
+        return { success: false, error: e.message || 'An unknown error occurred during update.' };
+    }
 }
 
 export async function addCommentAction(problemId: string, comment: Omit<Comment, 'id' | 'timestamp'>): Promise<{ success: boolean; error?: string }> {
@@ -125,15 +164,4 @@ export async function addCommentAction(problemId: string, comment: Omit<Comment,
         console.error('Error adding comment:', error);
         return { success: false, error: error.message };
     }
-}
-
-export async function updateProblemStatsAction(problemId: string, stat: 'likes' | 'saves'): Promise<{ success: boolean; error?: string }> {
-    if (!problemId || (stat !== 'likes' && stat !== 'saves')) {
-        return { success: false, error: 'Invalid input provided.' };
-    }
-    
-    // This action is handled client-side with optimistic updates in ProblemView.tsx
-    // to ensure a fast user experience. It uses the client SDK with atomic increments.
-    // This server action is no longer used for stats to prevent misuse and keep UI fast.
-    return { success: true };
 }
